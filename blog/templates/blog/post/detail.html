@@ -1,0 +1,154 @@
+{% extends "blog/base.html" %}
+
+{% block title %}{{ post.title }}{% endblock %}
+
+{% block content %}
+<article class="relative min-h-screen pb-20">
+    <!-- 1. Cinematic Hero Background -->
+    <div class="absolute inset-x-0 top-0 h-[70vh] -z-10 overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/20 via-purple-500/20 to-transparent dark:from-neon-purple/20 dark:via-neon-pink/10 dark:to-deep-space"></div>
+        <!-- Abstract Shapes -->
+        <div class="absolute top-20 left-10 w-96 h-96 bg-purple-400/30 rounded-full blur-[120px] mix-blend-multiply animate-blob"></div>
+        <div class="absolute top-40 right-10 w-96 h-96 bg-pink-400/30 rounded-full blur-[120px] mix-blend-multiply animate-blob animation-delay-2000"></div>
+    </div>
+
+    <!-- 2. Hero Content -->
+    <header class="container mx-auto px-4 pt-32 pb-16 text-center max-w-5xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/50 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 mb-8 animate-fade-in-up">
+            <span class="w-2 h-2 rounded-full bg-neon-pink animate-pulse"></span>
+            <span class="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-white/80">Immersive Read</span>
+        </div>
+        
+        <h1 class="text-5xl md:text-7xl lg:text-8xl font-black mb-8 text-slate-900 dark:text-white leading-tight tracking-tight drop-shadow-2xl animate-fade-in-up delay-100">
+            {{ post.title }}
+        </h1>
+
+        <div class="flex flex-wrap items-center justify-center gap-6 text-sm font-medium text-slate-600 dark:text-white/60 animate-fade-in-up delay-200">
+            <div class="flex items-center gap-2">
+                {% if post.author.profile_image %}
+                    <img src="{{ post.author.profile_image.url }}" alt="{{ post.author }}" class="w-8 h-8 rounded-full border-2 border-white dark:border-white/20">
+                {% else %}
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-neon-purple to-neon-pink p-[2px]">
+                        <div class="w-full h-full rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-xs font-bold text-slate-700 dark:text-white">
+                            {{ post.author.username|slice:":1"|upper }}
+                        </div>
+                    </div>
+                {% endif %}
+                <span class="text-slate-900 dark:text-white">By {{ post.author }}</span>
+            </div>
+            <span>&bull;</span>
+            <span>{{ post.publish|date:"F d, Y" }}</span>
+            <span>&bull;</span>
+            <span class="flex items-center gap-1.5 text-neon-purple">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                {{ post.get_read_time }} min read
+            </span>
+        </div>
+    </header>
+
+    <!-- 3. Glass Content Container -->
+    <div class="container mx-auto px-4 max-w-4xl relative z-10">
+        <div class="bg-white/70 dark:bg-white/5 backdrop-blur-3xl border border-white/20 dark:border-white/10 rounded-3xl p-8 md:p-16 shadow-[0_0_50px_-12px_rgba(0,0,0,0.1)] dark:shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] animate-fade-in-up delay-300">
+            <div class="prose prose-lg md:prose-xl max-w-none 
+                prose-slate dark:prose-invert 
+                prose-headings:font-bold prose-headings:tracking-tight 
+                prose-a:text-neon-pink prose-a:no-underline hover:prose-a:underline
+                prose-blockquote:border-l-4 prose-blockquote:border-neon-purple prose-blockquote:bg-slate-100/50 dark:prose-blockquote:bg-white/5 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-lg
+                prose-img:rounded-2xl prose-img:shadow-2xl">
+                {{ post.body|linebreaks }}
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Floating Action Bar (Bottom) -->
+    <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 animate-fade-in-up delay-500">
+        <div class="flex items-center gap-2 p-2 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-black/10 dark:border-white/10 shadow-2xl">
+            <!-- Like -->
+            <button class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors group">
+                <svg class="w-5 h-5 text-slate-400 dark:text-white/60 group-hover:text-neon-pink transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                <span class="font-bold text-slate-700 dark:text-white">24</span>
+            </button>
+            
+            <div class="w-px h-6 bg-black/10 dark:bg-white/10"></div>
+
+            <!-- Comments Toggle -->
+            <button class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors group">
+                <svg class="w-5 h-5 text-slate-400 dark:text-white/60 group-hover:text-blue-400 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM18 14H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                <span class="font-bold text-slate-700 dark:text-white">{{ post.comments.count }}</span>
+            </button>
+
+            <div class="w-px h-6 bg-black/10 dark:bg-white/10"></div>
+
+            <!-- Share -->
+            <button class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-slate-400 dark:text-white/60 hover:text-slate-900 dark:hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Inline Interaction Section (Below Content) -->
+    <div class="container mx-auto px-4 max-w-3xl mt-12 mb-20">
+        <div class="border-t border-black/10 dark:border-white/10 pt-12">
+            <h3 class="text-2xl font-bold mb-8 text-slate-900 dark:text-white">Comments ({{ post.comments.count }})</h3>
+            
+            {% for comment in post.comments.all %}
+                <div class="flex gap-4 mb-8 animate-fade-in-up">
+                    <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-white/10 flex items-center justify-center text-sm font-bold text-slate-600 dark:text-white">
+                        {{ comment.user|default:"U"|slice:":1" }}
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-baseline justify-between mb-1">
+                            <span class="font-bold text-slate-900 dark:text-white">{{ comment.user|default:"User" }}</span>
+                            <span class="text-xs text-slate-500 dark:text-white/40">{{ comment.created|timesince }} ago</span>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300 leading-relaxed">{{ comment.body }}</p>
+                    </div>
+                </div>
+            {% empty %}
+                <p class="text-slate-500 dark:text-white/40 italic">No comments yet. Be the first to share your thoughts!</p>
+            {% endfor %}
+
+            <!-- Add Comment Form -->
+            <div class="mt-8">
+                <textarea class="w-full bg-slate-100 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all resize-none shadow-inner" rows="4" placeholder="Join the discussion..."></textarea>
+                <div class="flex justify-end mt-4">
+                    <button class="px-6 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold hover:scale-105 transition-transform shadow-lg">
+                        Post Comment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</article>
+
+<style>
+  @keyframes blob {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+  }
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  .animate-fade-in-up {
+      animation: fadeInUp 0.8s ease-out forwards;
+      opacity: 0;
+      transform: translateY(20px);
+  }
+  .delay-100 { animation-delay: 0.1s; }
+  .delay-200 { animation-delay: 0.2s; }
+  .delay-300 { animation-delay: 0.3s; }
+  .delay-500 { animation-delay: 0.5s; }
+  
+  @keyframes fadeInUp {
+      to {
+          opacity: 1;
+          transform: translateY(0);
+      }
+  }
+</style>
+{% endblock %}

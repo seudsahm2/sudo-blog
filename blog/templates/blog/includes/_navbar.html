@@ -1,0 +1,39 @@
+<header class="fixed top-0 inset-x-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-deep-space/80 border-b border-black/5 dark:border-glass-border transition-colors duration-300">
+    <div class="container mx-auto px-4 h-20 flex justify-between items-center relative">
+        <!-- Logo -->
+        <a href="{% url 'blog:post_list' %}" class="text-2xl font-black tracking-tighter bg-gradient-to-r from-neon-purple to-neon-pink bg-clip-text text-transparent hover:scale-105 transition-transform">
+            Stunning Blog
+        </a>
+
+        <!-- Mobile Toggle -->
+        <div class="md:hidden cursor-pointer text-white/80 hover:text-white" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </div>
+
+        <!-- Links & Search -->
+        <nav id="mobile-menu" class="hidden md:flex absolute md:static top-20 left-0 w-full md:w-auto bg-deep-space/95 md:bg-transparent flex-col md:flex-row items-center gap-6 p-6 md:p-0 border-b md:border-none border-glass-border shadow-2xl md:shadow-none transition-all duration-300">
+            
+            <div class="w-full md:w-auto">
+                <form action="{% url 'blog:post_list' %}" method="get" class="flex items-center">
+                    <div class="relative group w-full">
+                        <input type="text" name="q" placeholder="Search..." value="{{ query|default:'' }}" 
+                            class="w-full md:w-48 focus:w-64 transition-all duration-300 bg-white/5 border border-black/10 dark:border-white/10 rounded-full py-2 px-4 text-sm text-slate-800 dark:text-white placeholder-slate-500 dark:placeholder-white/30 focus:outline-none focus:border-neon-purple focus:ring-1 focus:ring-neon-purple bg-slate-100 dark:bg-white/5">
+                        <div class="absolute right-3 top-2.5 text-slate-400 dark:text-white/30 group-focus-within:text-neon-purple pointer-events-none">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <a href="#" class="text-sm font-medium text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:text-neon-pink transition-colors">Categories</a>
+            <a href="#" class="text-sm font-medium text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:text-neon-pink transition-colors">About</a>
+            <a href="#" class="text-sm font-medium text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:text-neon-pink transition-colors">Contact</a>
+
+            <!-- Theme Toggle -->
+            <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-slate-600 dark:text-white">
+                <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <svg class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
+        </nav>
+    </div>
+</header>
