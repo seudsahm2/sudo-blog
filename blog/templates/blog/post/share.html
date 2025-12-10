@@ -1,0 +1,155 @@
+{% extends "blog/base.html" %}
+
+{% block title %}Share "{{ post.title }}"{% endblock %}
+
+{% block content %}
+<div class="relative min-h-screen pt-32 pb-20 flex items-center justify-center overflow-hidden">
+    <!-- Background Effects -->
+    <div class="absolute inset-0 -z-10">
+        <div class="absolute top-20 left-10 w-96 h-96 bg-purple-500/20 rounded-full blur-[120px] mix-blend-screen animate-blob"></div>
+        <div class="absolute bottom-20 right-10 w-96 h-96 bg-pink-500/20 rounded-full blur-[120px] mix-blend-screen animate-blob animation-delay-2000"></div>
+    </div>
+
+    <div class="container mx-auto px-4 max-w-6xl">
+        {% if sent %}
+            <!-- Success State -->
+            <div class="max-w-xl mx-auto text-center bg-white/5 backdrop-blur-3xl border border-white/10 rounded-3xl p-12 shadow-2xl animate-fade-in-up">
+                <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <svg class="w-10 h-10 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <h1 class="text-3xl font-black text-white mb-4">Email Sent!</h1>
+                <p class="text-white/60 mb-8 text-lg">
+                    "{{ post.title }}" has been successfully shared with <span class="text-neon-pink font-bold">{{ form.cleaned_data.to }}</span>.
+                </p>
+                <a href="{{ post.get_absolute_url }}" class="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-neon-purple hover:bg-neon-pink text-white font-bold transition-all hover:scale-105 shadow-lg shadow-neon-purple/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Back to Article
+                </a>
+            </div>
+        {% else %}
+            <!-- Share Interface -->
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                
+                <!-- Left: The Form -->
+                <div class="bg-white/5 backdrop-blur-3xl border border-white/10 dark:border-white/5 rounded-3xl p-8 md:p-10 shadow-2xl order-2 lg:order-1 animate-fade-in-up">
+                    <header class="mb-8">
+                        <h1 class="text-3xl font-black text-slate-800 dark:text-white mb-2">Share this Story</h1>
+                        <p class="text-slate-500 dark:text-white/40">Spread the word about this stunning read.</p>
+                    </header>
+
+                    <form method="post" class="space-y-6">
+                        {% csrf_token %}
+                        
+                        <!-- Name Field -->
+                        <div class="space-y-2">
+                            <label for="{{ form.name.id_for_label }}" class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-white/40 ml-1">Your Name</label>
+                            <input type="text" name="{{ form.name.html_name }}" id="{{ form.name.id_for_label }}" value="{{ form.name.value|default:'' }}" 
+                                class="w-full bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/20 focus:outline-none focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all"
+                                placeholder="John Doe">
+                            {% if form.name.errors %}
+                                <p class="text-red-400 text-xs mt-1">{{ form.name.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Email Fields Grid -->
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label for="{{ form.email.id_for_label }}" class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-white/40 ml-1">Your Email</label>
+                                <input type="email" name="{{ form.email.html_name }}" id="{{ form.email.id_for_label }}" value="{{ form.email.value|default:'' }}" 
+                                    class="w-full bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/20 focus:outline-none focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all"
+                                    placeholder="you@example.com">
+                                {% if form.email.errors %}
+                                    <p class="text-red-400 text-xs mt-1">{{ form.email.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="space-y-2">
+                                <label for="{{ form.to.id_for_label }}" class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-white/40 ml-1">Recipient Email</label>
+                                <input type="email" name="{{ form.to.html_name }}" id="{{ form.to.id_for_label }}" value="{{ form.to.value|default:'' }}" 
+                                    class="w-full bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/20 focus:outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
+                                    placeholder="friend@example.com">
+                                {% if form.to.errors %}
+                                    <p class="text-red-400 text-xs mt-1">{{ form.to.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Comments -->
+                        <div class="space-y-2">
+                            <label for="{{ form.comments.id_for_label }}" class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-white/40 ml-1">Message (Optional)</label>
+                            <textarea name="{{ form.comments.html_name }}" id="{{ form.comments.id_for_label }}" rows="4" 
+                                class="w-full bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/20 focus:outline-none focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all resize-none"
+                                placeholder="Thought you'd find this interesting...">{{ form.comments.value|default:'' }}</textarea>
+                        </div>
+
+                        <!-- Action -->
+                        <div class="pt-4 flex items-center justify-between">
+                            <a href="{{ post.get_absolute_url }}" class="text-sm font-bold text-slate-500 dark:text-white/40 hover:text-slate-800 dark:hover:text-white transition-colors">Cancel</a>
+                            <button type="submit" class="group relative px-8 py-3 rounded-xl bg-gradient-to-r from-neon-purple to-neon-pink text-white font-bold shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105 transition-all duration-300 overflow-hidden">
+                                <span class="relative z-10 flex items-center gap-2">
+                                    Send Email
+                                    <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                                </span>
+                                <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Right: Visual Preview (The Card) -->
+                <div class="hidden lg:block order-1 lg:order-2 perspective-1000">
+                    <div class="relative w-full aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl transform hover:rotate-y-6 hover:rotate-x-6 transition-transform duration-700 ease-out group">
+                        
+                        <!-- Dynamic Background Pattern -->
+                        <div class="absolute inset-0 bg-deep-space">
+                            <div class="absolute inset-0 bg-gradient-to-br from-neon-purple/40 to-neon-pink/40 mix-blend-overlay"></div>
+                             <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC4wNSkiPjxwYXRoIGQ9Ik0zNiAzNHYtNGgtMnY0aC0ydjRoMnY0aDJ2LTRoMnYtNGgtMnpNMzYgMzRWMGgtMnYzNGgyek02IDZWNmg1NHY2SDZWMNmg1NHY2SDZWM3oiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-20"></div>
+                        </div>
+
+                        <!-- Card Content -->
+                        <div class="absolute inset-0 p-12 flex flex-col justify-between bg-gradient-to-b from-transparent to-black/80">
+                            
+                            <!-- Top Decor -->
+                            <div class="flex justify-between items-start">
+                                <div class="w-12 h-12 rounded-full border border-white/20 bg-white/5 backdrop-blur-md flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                </div>
+                                <span class="text-xs font-bold uppercase tracking-widest text-white/60 border border-white/20 px-3 py-1 rounded-full">Article</span>
+                            </div>
+
+                            <!-- Text Content -->
+                            <div>
+                                <h2 class="text-4xl font-black text-white mb-6 leading-tight drop-shadow-xl">{{ post.title }}</h2>
+                                <p class="text-white/80 text-lg leading-relaxed mb-8 line-clamp-4">{{ post.body|truncatewords:25 }}</p>
+                                
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-neon-purple to-neon-pink p-[2px]">
+                                         <div class="w-full h-full rounded-full bg-black flex items-center justify-center text-xs font-bold text-white">
+                                            {{ post.author.username|slice:":1"|upper }}
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span class="text-sm font-bold text-white">{{ post.author }}</span>
+                                        <span class="text-xs text-white/50">{{ post.publish|date:"M d, Y" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .perspective-1000 {
+        perspective: 1000px;
+    }
+    .rotate-y-6 {
+        transform: rotateY(6deg);
+    }
+    .rotate-x-6 {
+         transform: rotateX(6deg);
+    }
+</style>
+{% endblock %}

@@ -1,8 +1,8 @@
-{% if posts.has_other_pages %}
+{% if page_obj.has_other_pages %}
 <div class="fixed bottom-8 left-0 w-full flex justify-center z-40 pointer-events-none">
     <div class="pointer-events-auto flex items-center gap-6 px-6 py-3 bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl hover:-translate-y-1 transition-transform duration-300">
-        {% if posts.has_previous %}
-            <a href="?page={{ posts.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" class="text-white hover:text-neon-pink hover:scale-125 transition-all">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" class="text-white hover:text-neon-pink hover:scale-125 transition-all">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
             </a>
         {% else %}
@@ -12,13 +12,13 @@
         {% endif %}
 
         <span class="flex items-center gap-1 font-mono text-lg font-bold">
-            <span class="text-neon-purple">{{ posts.number }}</span>
+            <span class="text-neon-purple">{{ page_obj.number }}</span>
             <span class="text-white/30">/</span>
-            <span class="text-white/50">{{ posts.paginator.num_pages }}</span>
+            <span class="text-white/50">{{ page_obj.paginator.num_pages }}</span>
         </span>
 
-        {% if posts.has_next %}
-            <a href="?page={{ posts.next_page_number }}{% if query %}&q={{ query }}{% endif %}" class="text-white hover:text-neon-pink hover:scale-125 transition-all">
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}" class="text-white hover:text-neon-pink hover:scale-125 transition-all">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
             </a>
         {% else %}
