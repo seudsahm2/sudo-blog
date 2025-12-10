@@ -1,17 +1,16 @@
 # blog/admin.py
 from django.contrib import admin
-from .models import Post, Category, Tag, Comment, Like
+from .models import Post, Category, Comment, Like
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
     list_display = ['title', 'slug', 'author', 'publish', 'status']   # columns shown in changelist
-    list_filter = ['status', 'created', 'publish', 'author', 'tags']  # add tags filter
+    list_filter = ['status', 'created', 'publish', 'author']  
     search_fields = ['title', 'body']
     prepopulated_fields = {'slug': ('title',)}
     raw_id_fields = ['author']
     date_hierarchy = 'publish'
-    ordering = ['status', 'publish']
-    filter_horizontal = ['tags']                                      # for easy many-to-many editing
+    ordering = ['status', 'publish']                                    # for easy many-to-many editing
     show_facets = admin.ShowFacets.ALWAYS
 
 # Register Category admin
@@ -22,15 +21,7 @@ class CategoryAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}                          # auto-fill slug from name
     ordering = ['name']                                                # sort categories alphabetically
     show_facets = admin.ShowFacets.ALWAYS                              # show facets
-
-# Register Tag admin
-@admin.register(Tag)
-class TagAdmin(admin.ModelAdmin):
-    list_display = ['name', 'slug']                                   # show name and slug
-    search_fields = ['name']                                           # search by tag name
-    prepopulated_fields = {'slug': ('name',)}                          # auto-fill slug from name
-    ordering = ['name']                                                # alphabetical order
-    show_facets = admin.ShowFacets.ALWAYS                              # show facets
+                            # show facets
 
 # Register Comment admin
 @admin.register(Comment)

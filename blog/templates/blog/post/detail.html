@@ -3,131 +3,93 @@
 {% block title %}{{ post.title }}{% endblock %}
 
 {% block content %}
-<article class="relative min-h-screen pb-20">
+<article class="relative min-h-screen pb-40">
     <!-- 1. Cinematic Hero Background -->
-    <div class="absolute inset-x-0 top-0 h-[70vh] -z-10 overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/20 via-purple-500/20 to-transparent dark:from-neon-purple/20 dark:via-neon-pink/10 dark:to-deep-space"></div>
+    <div class="fixed inset-x-0 top-0 h-[70vh] -z-10 overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/30 via-purple-500/20 to-deep-space dark:from-neon-purple/20 dark:via-neon-pink/10 dark:to-deep-space"></div>
         <!-- Abstract Shapes -->
         <div class="absolute top-20 left-10 w-96 h-96 bg-purple-400/30 rounded-full blur-[120px] mix-blend-multiply animate-blob"></div>
         <div class="absolute top-40 right-10 w-96 h-96 bg-pink-400/30 rounded-full blur-[120px] mix-blend-multiply animate-blob animation-delay-2000"></div>
+        <div class="absolute -bottom-20 left-1/2 w-96 h-96 bg-indigo-400/30 rounded-full blur-[120px] mix-blend-multiply animate-blob animation-delay-4000"></div>
     </div>
 
-    <!-- 2. Hero Content -->
-    <header class="container mx-auto px-4 pt-32 pb-16 text-center max-w-5xl">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/50 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 mb-8 animate-fade-in-up">
-            <span class="w-2 h-2 rounded-full bg-neon-pink animate-pulse"></span>
-            <span class="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-white/80">Immersive Read</span>
-        </div>
+    <!-- 2. Content Container -->
+    <div class="relative container mx-auto px-4 max-w-4xl pt-32 lg:pt-40">
         
-        <h1 class="text-5xl md:text-7xl lg:text-8xl font-black mb-8 text-slate-900 dark:text-white leading-tight tracking-tight drop-shadow-2xl animate-fade-in-up delay-100">
-            {{ post.title }}
-        </h1>
+        <!-- Header Info -->
+        <header class="text-center mb-12 animate-fade-in-down">
+           <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-6 text-sm font-bold text-white shadow-lg shadow-purple-500/20">
+                <span>{{ post.publish|date:"M d, Y" }}</span>
+                <span class="w-1 h-1 rounded-full bg-white/50"></span>
+                <span>{{ post.get_read_time }} min read</span>
+           </div>
+           
+           <h1 class="text-4xl md:text-6xl font-black text-slate-900 dark:text-white leading-tight mb-8 drop-shadow-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-white/70">
+               {{ post.title }}
+           </h1>
 
-        <div class="flex flex-wrap items-center justify-center gap-6 text-sm font-medium text-slate-600 dark:text-white/60 animate-fade-in-up delay-200">
-            <div class="flex items-center gap-2">
-                {% if post.author.profile_image %}
-                    <img src="{{ post.author.profile_image.url }}" alt="{{ post.author }}" class="w-8 h-8 rounded-full border-2 border-white dark:border-white/20">
-                {% else %}
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-neon-purple to-neon-pink p-[2px]">
-                        <div class="w-full h-full rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-xs font-bold text-slate-700 dark:text-white">
+           <!-- Author -->
+           <div class="flex items-center justify-center gap-3">
+               {% if post.author.profile_image %}
+                   <img src="{{ post.author.profile_image.url }}" alt="{{ post.author }}" class="w-12 h-12 rounded-full border-2 border-white/20 shadow-xl">
+               {% else %}
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-neon-purple to-neon-pink p-[2px] shadow-xl">
+                        <div class="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-lg font-bold text-white">
                             {{ post.author.username|slice:":1"|upper }}
                         </div>
                     </div>
-                {% endif %}
-                <span class="text-slate-900 dark:text-white">By {{ post.author }}</span>
-            </div>
-            <span>&bull;</span>
-            <span>{{ post.publish|date:"F d, Y" }}</span>
-            <span>&bull;</span>
-            <span class="flex items-center gap-1.5 text-neon-purple">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                {{ post.get_read_time }} min read
-            </span>
-        </div>
-    </header>
+               {% endif %}
+               <div class="text-left">
+                   <div class="text-xs uppercase tracking-widest text-slate-500 dark:text-white/60 font-bold mb-0.5">Written by</div>
+                   <div class="text-lg font-bold text-slate-900 dark:text-white">{{ post.author }}</div>
+               </div>
+           </div>
 
-    <!-- 3. Glass Content Container -->
-    <div class="container mx-auto px-4 max-w-4xl relative z-10">
-        <div class="bg-white/70 dark:bg-white/5 backdrop-blur-3xl border border-white/20 dark:border-white/10 rounded-3xl p-8 md:p-16 shadow-[0_0_50px_-12px_rgba(0,0,0,0.1)] dark:shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] animate-fade-in-up delay-300">
+           <!-- Tags -->
+           {% if post.tags.all %}
+               <div class="flex flex-wrap justify-center gap-2 mt-8 animate-fade-in-up delay-300">
+                   {% for tag in post.tags.all %}
+                       <a href="{% url 'blog:post_list_by_tag' tag.slug %}" class="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 hover:border-neon-pink/50 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-white/60 hover:text-neon-pink transition-all">
+                           #{{ tag.name }}
+                       </a>
+                   {% endfor %}
+               </div>
+           {% endif %}
+        </header>
+
+        <!-- 3. Glass Article Body -->
+        <div class="relative bg-white/80 dark:bg-white/5 backdrop-blur-3xl rounded-3xl p-8 md:p-12 border border-white/20 shadow-2xl animate-fade-in-up">
             <div class="prose prose-lg md:prose-xl max-w-none 
                 prose-slate dark:prose-invert 
                 prose-headings:font-bold prose-headings:tracking-tight 
+                prose-p:leading-loose prose-p:text-slate-600 dark:prose-p:text-slate-300
                 prose-a:text-neon-pink prose-a:no-underline hover:prose-a:underline
                 prose-blockquote:border-l-4 prose-blockquote:border-neon-purple prose-blockquote:bg-slate-100/50 dark:prose-blockquote:bg-white/5 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-lg
-                prose-img:rounded-2xl prose-img:shadow-2xl">
+                prose-img:rounded-xl prose-img:shadow-2xl prose-img:border prose-img:border-white/10">
                 {{ post.body|linebreaks }}
             </div>
         </div>
+
     </div>
 
-    <!-- 4. Floating Action Bar (Bottom) -->
-    <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 animate-fade-in-up delay-500">
-        <div class="flex items-center gap-2 p-2 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-black/10 dark:border-white/10 shadow-2xl">
-            <!-- Like -->
-            <form id="like-form" action="{% url 'blog:post_like' post.id %}" method="post" class="flex items-center">
-                {% csrf_token %}
-                <button type="submit" class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors group">
-                    <svg id="like-icon" class="w-5 h-5 {% if is_liked %}text-neon-pink fill-current{% else %}text-slate-400 dark:text-white/60 group-hover:text-neon-pink{% endif %} transition-colors" fill="{% if is_liked %}currentColor{% else %}none{% endif %}" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                    </svg>
-                    <span id="like-count" class="font-bold text-slate-700 dark:text-white">{{ post.likes.count }}</span>
-                </button>
-            </form>
-            
-            <script>
-                document.getElementById('like-form').addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const form = this;
-                    const icon = document.getElementById('like-icon');
-                    const count = document.getElementById('like-count');
-                    
-                    fetch(form.action, {
-                        method: 'POST',
-                        body: new FormData(form),
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        count.textContent = data.count;
-                        if (data.liked) {
-                            icon.classList.remove('text-slate-400', 'dark:text-white/60');
-                            icon.classList.add('text-neon-pink', 'fill-current');
-                            icon.setAttribute('fill', 'currentColor');
-                        } else {
-                            icon.classList.add('text-slate-400', 'dark:text-white/60');
-                            icon.classList.remove('text-neon-pink', 'fill-current');
-                            icon.setAttribute('fill', 'none');
-                        }
-                    })
-                    .catch(error => console.error('Error:', error));
-                });
-            </script>
-            
-            <div class="w-px h-6 bg-black/10 dark:bg-white/10"></div>
-
-            <!-- Comments Toggle -->
-            <button class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors group">
-                <svg class="w-5 h-5 text-slate-400 dark:text-white/60 group-hover:text-blue-400 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM18 14H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
-                <span class="font-bold text-slate-700 dark:text-white">{{ post.comments.count }}</span>
-            </button>
-
-            <div class="w-px h-6 bg-black/10 dark:bg-white/10"></div>
-
-            <!-- Share -->
-            <a href="{% url 'blog:post_share' post.id %}" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-slate-400 dark:text-white/60 hover:text-slate-900 dark:hover:text-white">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
-            </a>
+    <!-- Similar Posts Section -->
+    {% if similar_posts %}
+    <div class="container mx-auto px-4 max-w-6xl mt-20">
+        <h3 class="text-2xl font-bold mb-8 text-slate-900 dark:text-white text-center">You Might Also Like</h3>
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {% for post in similar_posts %}
+                {% include "blog/includes/_post_card.html" %}
+            {% endfor %}
         </div>
     </div>
+    {% endif %}
 
-    <!-- Inline Interaction Section (Below Content) -->
-    <div class="container mx-auto px-4 max-w-3xl mt-12 mb-20">
+    <!-- Comments Section -->
+    <div id="comments-section" class="container mx-auto px-4 max-w-3xl mt-12 mb-20 scroll-mt-24">
         <div class="border-t border-black/10 dark:border-white/10 pt-12">
-            <h3 class="text-2xl font-bold mb-8 text-slate-900 dark:text-white">Comments ({{ post.comments.count }})</h3>
+            <h3 class="text-2xl font-bold mb-8 text-slate-900 dark:text-white">Comments ({{ comments.count }})</h3>
             
-            {% for comment in post.comments.all %}
+            {% for comment in comments %}
                 <div class="flex gap-4 mb-8 animate-fade-in-up">
                     <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-white/10 flex items-center justify-center text-sm font-bold text-slate-600 dark:text-white">
                         {{ comment.user|default:"U"|slice:":1" }}
@@ -143,54 +105,90 @@
             {% empty %}
                 <p class="text-slate-500 dark:text-white/40 italic">No comments yet. Be the first to share your thoughts!</p>
             {% endfor %}
-
-            <!-- Add Comment Form -->
-            <div class="mt-8">
+            
+            <div class="mt-12 bg-slate-100 dark:bg-white/5 p-8 rounded-2xl border border-black/5 dark:border-white/10">
+                <h4 class="text-lg font-bold mb-6 text-slate-900 dark:text-white">Leave a Comment</h4>
                 <form action="{% url 'blog:post_comment' post.id %}" method="post">
                     {% csrf_token %}
-                    <textarea name="body" class="w-full bg-slate-100 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all resize-none shadow-inner" rows="4" placeholder="Join the discussion..." required>{{ form.body.value|default:"" }}</textarea>
-                    {% if form.body.errors %}
-                        <div class="text-red-500 text-sm mt-2">{{ form.body.errors }}</div>
-                    {% endif %}
-                    <div class="flex justify-end mt-4">
-                        <button type="submit" class="px-6 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold hover:scale-105 transition-transform shadow-lg">
-                            Post Comment
-                        </button>
+                    <div class="mb-4">
+                        <textarea name="body" class="w-full bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl p-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all resize-none" rows="4" placeholder="Share your thoughts..." required></textarea>
                     </div>
+                    <button type="submit" class="px-8 py-3 rounded-xl bg-neon-purple hover:bg-neon-pink text-white font-bold shadow-lg shadow-purple-500/30 hover:shadow-pink-500/30 transition-all transform hover:-translate-y-1">
+                        Post Comment
+                    </button>
                 </form>
             </div>
         </div>
     </div>
-</article>
 
-<style>
-  @keyframes blob {
-    0% { transform: translate(0px, 0px) scale(1); }
-    33% { transform: translate(30px, -50px) scale(1.1); }
-    66% { transform: translate(-20px, 20px) scale(0.9); }
-    100% { transform: translate(0px, 0px) scale(1); }
-  }
-  .animate-blob {
-    animation: blob 7s infinite;
-  }
-  .animation-delay-2000 {
-    animation-delay: 2s;
-  }
-  .animate-fade-in-up {
-      animation: fadeInUp 0.8s ease-out forwards;
-      opacity: 0;
-      transform: translateY(20px);
-  }
-  .delay-100 { animation-delay: 0.1s; }
-  .delay-200 { animation-delay: 0.2s; }
-  .delay-300 { animation-delay: 0.3s; }
-  .delay-500 { animation-delay: 0.5s; }
-  
-  @keyframes fadeInUp {
-      to {
-          opacity: 1;
-          transform: translateY(0);
-      }
-  }
-</style>
+    <!-- 4. Floating Action Bar (Sticky Bottom) [Restored] -->
+    <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-bounce-in">
+        <div class="flex items-center gap-2 p-2 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 shadow-2xl shadow-purple-500/20">
+            <!-- Like -->
+            <form id="like-form" action="{% url 'blog:post_like' post.id %}" method="post" class="flex items-center">
+                {% csrf_token %}
+                <button type="submit" class="group flex items-center gap-2 px-6 py-3 rounded-full bg-white dark:bg-white/5 hover:bg-red-50 dark:hover:bg-red-500/20 transition-all">
+                    <svg id="like-icon" class="w-6 h-6 {% if is_liked %}text-red-500 fill-current{% else %}text-slate-400 dark:text-white/60 group-hover:text-red-500{% endif %} transition-colors" fill="{% if is_liked %}currentColor{% else %}none{% endif %}" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                    </svg>
+                    <span id="like-count" class="font-bold text-slate-900 dark:text-white">{{ post.likes.count }}</span>
+                </button>
+            </form>
+
+            <div class="w-px h-8 bg-black/10 dark:bg-white/10"></div>
+
+            <!-- Comment Scroll -->
+            <button onclick="document.getElementById('comments-section').scrollIntoView({ behavior: 'smooth' })" class="p-3 rounded-full bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 dark:text-white/60 hover:text-neon-purple transition-all">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+            </button>
+
+            <!-- Share -->
+            <a href="{% url 'blog:post_share' post.id %}" class="p-3 rounded-full bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 dark:text-white/60 hover:text-neon-cyan transition-all">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+            </a>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        document.getElementById('like-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = this;
+            const icon = document.getElementById('like-icon');
+            const count = document.getElementById('like-count');
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                // Check if the server redirected us (e.g., to login page)
+                if (response.redirected || response.url.includes("login")) {
+                    alert("Please log in to like this post.");
+                    window.location.href = "/accounts/login/?next=" + window.location.pathname;
+                    return null; // Stop processing
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data) return; // Stopped due to redirect
+                
+                count.textContent = data.count;
+                if (data.liked) {
+                    icon.classList.remove('text-slate-400', 'dark:text-white/60', 'group-hover:text-red-500');
+                    icon.classList.add('text-red-500', 'fill-current');
+                    icon.setAttribute('fill', 'currentColor');
+                } else {
+                    icon.classList.add('text-slate-400', 'dark:text-white/60', 'group-hover:text-red-500');
+                    icon.classList.remove('text-red-500', 'fill-current');
+                    icon.setAttribute('fill', 'none');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    </script>
+</article>
 {% endblock %}

@@ -4,6 +4,8 @@ from django.utils import timezone
 from django.db.models.functions import Now       
 from django.urls import reverse
 
+from taggit.managers import TaggableManager
+
 class PublishedManager(models.Manager):
     def get_queryset(self):
         return (
@@ -44,15 +46,9 @@ class Post(models.Model):
         blank=True
     )
 
-  
-    tags = models.ManyToManyField(
-        'Tag',
-        related_name='posts',                     
-        blank=True                                
-    )
-
     objects = models.Manager()
     published = PublishedManager()
+    tags = TaggableManager()
 
     class Meta:
         ordering = ['-publish']                   
@@ -84,13 +80,6 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-
-class Tag(models.Model):
-    name = models.CharField(max_length=50)         
-    slug = models.SlugField(max_length=100, unique=True)  
-
-    def __str__(self):
-        return self.name
 
 
 class Comment(models.Model):
