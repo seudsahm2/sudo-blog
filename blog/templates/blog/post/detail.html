@@ -64,10 +64,46 @@
     <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 animate-fade-in-up delay-500">
         <div class="flex items-center gap-2 p-2 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-black/10 dark:border-white/10 shadow-2xl">
             <!-- Like -->
-            <button class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors group">
-                <svg class="w-5 h-5 text-slate-400 dark:text-white/60 group-hover:text-neon-pink transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                <span class="font-bold text-slate-700 dark:text-white">24</span>
-            </button>
+            <form id="like-form" action="{% url 'blog:post_like' post.id %}" method="post" class="flex items-center">
+                {% csrf_token %}
+                <button type="submit" class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors group">
+                    <svg id="like-icon" class="w-5 h-5 {% if is_liked %}text-neon-pink fill-current{% else %}text-slate-400 dark:text-white/60 group-hover:text-neon-pink{% endif %} transition-colors" fill="{% if is_liked %}currentColor{% else %}none{% endif %}" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                    </svg>
+                    <span id="like-count" class="font-bold text-slate-700 dark:text-white">{{ post.likes.count }}</span>
+                </button>
+            </form>
+            
+            <script>
+                document.getElementById('like-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const form = this;
+                    const icon = document.getElementById('like-icon');
+                    const count = document.getElementById('like-count');
+                    
+                    fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form),
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        count.textContent = data.count;
+                        if (data.liked) {
+                            icon.classList.remove('text-slate-400', 'dark:text-white/60');
+                            icon.classList.add('text-neon-pink', 'fill-current');
+                            icon.setAttribute('fill', 'currentColor');
+                        } else {
+                            icon.classList.add('text-slate-400', 'dark:text-white/60');
+                            icon.classList.remove('text-neon-pink', 'fill-current');
+                            icon.setAttribute('fill', 'none');
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
+            </script>
             
             <div class="w-px h-6 bg-black/10 dark:bg-white/10"></div>
 
@@ -110,12 +146,18 @@
 
             <!-- Add Comment Form -->
             <div class="mt-8">
-                <textarea class="w-full bg-slate-100 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all resize-none shadow-inner" rows="4" placeholder="Join the discussion..."></textarea>
-                <div class="flex justify-end mt-4">
-                    <button class="px-6 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold hover:scale-105 transition-transform shadow-lg">
-                        Post Comment
-                    </button>
-                </div>
+                <form action="{% url 'blog:post_comment' post.id %}" method="post">
+                    {% csrf_token %}
+                    <textarea name="body" class="w-full bg-slate-100 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all resize-none shadow-inner" rows="4" placeholder="Join the discussion..." required>{{ form.body.value|default:"" }}</textarea>
+                    {% if form.body.errors %}
+                        <div class="text-red-500 text-sm mt-2">{{ form.body.errors }}</div>
+                    {% endif %}
+                    <div class="flex justify-end mt-4">
+                        <button type="submit" class="px-6 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold hover:scale-105 transition-transform shadow-lg">
+                            Post Comment
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

@@ -99,7 +99,7 @@ class Comment(models.Model):
     body = models.TextField()                     
     created = models.DateTimeField(auto_now_add=True)  
     updated = models.DateTimeField(auto_now=True)     
-    approved = models.BooleanField(default=False)     
+    approved = models.BooleanField(default=True)     
 
     class Meta:
         ordering = ["-created"]                   
