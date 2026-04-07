@@ -2,9 +2,23 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.python-version
+
+# Test and coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
 
 # Environments
 .env
+.env.*
+!.env.example
+!.env.render.example
+!.env.template
 .venv
 env/
 venv/
@@ -13,12 +27,28 @@ env.bak/
 venv.bak/
 myenv/
 
+# Secrets and credentials
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.kdbx
+*.secrets
+*.secret
+secrets.*
+
 # Django
 *.log
+logs/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+*.sqlite3
+*.sqlite3-*
 media/
+staticfiles/
+celerybeat-schedule
 
 # Node.js
 node_modules/
@@ -26,13 +56,24 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .npm/
+.pnpm-store/
+.parcel-cache/
+.next/
+dist/
+build/
 
 # Editors
 .vscode/
 .idea/
 *.swp
 *.swo
+*.tmp
+*.bak
 
 # OS
 .DS_Store
 Thumbs.db
+Desktop.ini
+
+# AI reference
+ai_reference/*
