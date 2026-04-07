@@ -21,7 +21,7 @@
     <meta name="twitter:title" content="{% block twitter_title %}{% block title_twitter_fallback %}Stunning Blog{% endblock %}{% endblock %}">
     <meta name="twitter:description" content="{% block twitter_description %}{% block meta_description_twitter_fallback %}Curated stories and AI-assisted summaries with source attribution.{% endblock %}{% endblock %}">
     {% block twitter_image_meta %}{% if social_image_url %}<meta name="twitter:image" content="{{ social_image_url }}">{% elif twitter_image %}<meta name="twitter:image" content="{{ twitter_image }}">{% endif %}{% endblock %}
-    {% if adsense_enabled and adsense_client_id %}
+    {% if adsense_client_id %}
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ adsense_client_id }}" crossorigin="anonymous"></script>
     {% endif %}
     <!-- Google Fonts: Inter -->

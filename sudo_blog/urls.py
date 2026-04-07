@@ -21,6 +21,7 @@ from django.http import HttpResponse
 from blog import views as blog_views
 
 urlpatterns = [
+    path("", blog_views.PostListView.as_view(), name="home"),
     path("admin/", admin.site.urls),
     path("blog/",include("blog.urls",namespace="blog")),
     path("healthz", lambda request: HttpResponse("ok", content_type="text/plain"), name="healthz"),

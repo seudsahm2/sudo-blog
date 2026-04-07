@@ -597,6 +597,18 @@ class SeoAndHomepageTests(TestCase):
     @override_settings(
         ADSENSE_ENABLED=True,
         ADSENSE_CLIENT_ID="ca-pub-1234567890",
+        ADSENSE_SLOT_HEADER="1111111111",
+    )
+    def test_root_url_renders_adsense_head_snippet(self):
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+        self.assertIn("pagead2.googlesyndication.com", content)
+        self.assertIn("ca-pub-1234567890", content)
+
+    @override_settings(
+        ADSENSE_ENABLED=True,
+        ADSENSE_CLIENT_ID="ca-pub-1234567890",
         ADSENSE_SLOT_IN_ARTICLE="3333333333",
         ADSENSE_SLOT_BELOW_CONTENT="7777777777",
     )
