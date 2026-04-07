@@ -957,6 +957,16 @@ def robots_txt(request):
 
 
 @require_GET
+def ads_txt(request):
+    adsense_client_id = getattr(settings, 'ADSENSE_CLIENT_ID', '').strip()
+    publisher_id = adsense_client_id.replace('ca-pub-', 'pub-') if adsense_client_id else ''
+    content = ''
+    if publisher_id:
+        content = f'google.com, {publisher_id}, DIRECT, f08c47fec0942fa0\n'
+    return HttpResponse(content, content_type='text/plain')
+
+
+@require_GET
 def sitemap_xml(request):
     static_urls = [
         reverse('blog:post_list'),

@@ -28,6 +28,7 @@ urlpatterns = [
     path("about/", blog_views.legal_page, {'page': 'about'}, name='about_page'),
     path("disclaimer/", blog_views.legal_page, {'page': 'disclaimer'}, name='disclaimer_page'),
     path("contact/", blog_views.legal_page, {'page': 'contact'}, name='contact_page'),
+    path("ads.txt", blog_views.ads_txt, name='ads_txt_root'),
     path("robots.txt", blog_views.robots_txt, name='robots_txt_root'),
     path("sitemap.xml", blog_views.sitemap_xml, name='sitemap_xml_root'),
 ]

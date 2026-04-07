@@ -872,6 +872,14 @@ class SeoAndHomepageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Sitemap:", response.content.decode("utf-8"))
 
+    def test_ads_txt_endpoint_uses_adsense_client_id(self):
+        with override_settings(ADSENSE_CLIENT_ID="ca-pub-5061735490844182"):
+            response = self.client.get(reverse("ads_txt_root"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/plain")
+        self.assertIn("google.com, pub-5061735490844182, DIRECT, f08c47fec0942fa0", response.content.decode("utf-8"))
+
     def test_sitemap_endpoint(self):
         post = Post.published.get(slug="post-1")
         newer_ts = timezone.now() + timedelta(days=1)
