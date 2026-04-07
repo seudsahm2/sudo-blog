@@ -5,6 +5,7 @@ app_name="blog"
 
 urlpatterns = [
     path("",views.PostListView.as_view(),name="post_list"),
+    path("sports/", views.sports_hub, name="sports_hub"),
     path("<int:year>/<int:month>/<int:day>/<slug:post>/",views.post_detail,name="post_detail"),
     path("<int:year>/<int:month>/<int:day>/<slug:post>/social-image.svg", views.post_social_image, name="post_social_image"),
     path("<int:post_id>/share/",views.post_share,name="post_share"),

@@ -7,7 +7,7 @@ from django.utils.text import slugify
 from datetime import timedelta
 import time
 
-from blog.models import Article, NewsSource, Post
+from blog.models import Article, Category, NewsSource, Post
 from blog.celery_compat import shared_task
 from blog.services import ArticleSummarizationService, NewsIngestionService
 
@@ -132,6 +132,45 @@ def _qualifies_for_auto_publish(article: Article) -> bool:
     return True
 
 
+def _infer_category_name(article: Article) -> str:
+    ai_category = (article.summary_category or "").strip().title()
+    if ai_category in {"World", "Tech", "Sport", "Others"}:
+        return ai_category
+
+    provider = article.source.provider if article.source_id and article.source else ""
+    text_blob = " ".join([article.title or "", article.summary or "", article.body or ""]).lower()
+
+    if provider == NewsSource.Provider.OPENLIGADB:
+        return "Sport"
+
+    sport_terms = ("sport", "football", "soccer", "league", "match", "nba", "nfl", "cricket", "tennis")
+    tech_terms = ("tech", "ai", "software", "chip", "cyber", "cloud", "startup", "apple", "google", "microsoft")
+    world_terms = ("world", "government", "election", "war", "policy", "diplom", "country", "global")
+
+    if any(term in text_blob for term in sport_terms):
+        return "Sport"
+    if any(term in text_blob for term in tech_terms):
+        return "Tech"
+    if any(term in text_blob for term in world_terms):
+        return "World"
+    return "Others"
+
+
+def _resolve_article_category(article: Article, category_cache: dict[str, Category]) -> Category:
+    name = _infer_category_name(article)
+    cached = category_cache.get(name)
+    if cached:
+        return cached
+
+    slug = name.lower()
+    obj, _ = Category.objects.get_or_create(name=name, defaults={"slug": slug})
+    if obj.slug != slug:
+        obj.slug = slug
+        obj.save(update_fields=["slug"])
+    category_cache[name] = obj
+    return obj
+
+
 @shared_task
 def fetch_source_articles(source_id: int, max_items: int = 20) -> dict:
     task_name = 'fetch_source_articles'
@@ -226,10 +265,27 @@ def fetch_all_active_sources(max_items: int = 20) -> dict:
             return payload
 
         results = []
+        failures = []
         for source_id in source_ids:
-            results.append(fetch_source_articles(source_id=source_id, max_items=max_items))
+            try:
+                results.append(fetch_source_articles(source_id=source_id, max_items=max_items))
+            except Exception as exc:
+                source = NewsSource.objects.filter(id=source_id).values('name', 'provider').first()
+                failures.append(
+                    {
+                        'source_id': int(source_id),
+                        'source_name': (source or {}).get('name', ''),
+                        'provider': (source or {}).get('provider', ''),
+                        'error': str(exc)[:200],
+                    }
+                )
 
-        payload = {'status': 'ok', 'sources': len(source_ids), 'results': results}
+        payload = {
+            'status': 'ok' if not failures else 'partial',
+            'sources': len(source_ids),
+            'results': results,
+            'failures': failures,
+        }
         _record_task_success(task_name)
         return payload
     except Exception as exc:
@@ -296,9 +352,11 @@ def auto_publish_trusted_articles(limit: int = 20) -> dict:
 
         published = 0
         reviewed = 0
+        category_cache: dict[str, Category] = {}
         for article in candidates:
             if _qualifies_for_auto_publish(article):
                 publish_dt = article.published_at or timezone.now()
+                category = _resolve_article_category(article, category_cache)
                 Post.objects.create(
                     title=article.title,
                     slug=_build_unique_slug(article.title, publish_dt),
@@ -310,7 +368,7 @@ def auto_publish_trusted_articles(limit: int = 20) -> dict:
                     status=Post.Status.PUBLISHED,
                     auto_generated=True,
                     source_article=article,
-                    category=None,
+                    category=category,
                 )
                 article.status = Article.Status.PUBLISHED
                 article.save(update_fields=['status', 'updated'])

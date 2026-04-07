@@ -23,6 +23,7 @@ from blog import views as blog_views
 urlpatterns = [
     path("", blog_views.PostListView.as_view(), name="home"),
     path("admin/", admin.site.urls),
+    path("api/v1/", include("api.urls", namespace="api")),
     path("blog/",include("blog.urls",namespace="blog")),
     path("healthz", lambda request: HttpResponse("ok", content_type="text/plain"), name="healthz"),
     path("privacy-policy/", blog_views.legal_page, {'page': 'privacy'}, name='privacy_policy'),

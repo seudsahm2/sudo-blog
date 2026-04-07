@@ -18,6 +18,9 @@
             {% else %}
                 <span>Article</span>
             {% endif %}
+            <span class="px-2 py-0.5 rounded-full border border-white/20 text-white/70 normal-case tracking-normal text-[11px]">
+                {{ post.category.name|default:"Others" }}
+            </span>
             <span class="text-white/20">&bull;</span>
             <span class="text-white/40">{{ post.publish|date:"M d, Y" }}</span>
             {% if post.source_article and post.source_article.source %}

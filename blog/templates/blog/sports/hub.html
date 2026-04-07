@@ -1,0 +1,102 @@
+{% extends "blog/base.html" %}
+
+{% block title %}Sports Hub{% endblock %}
+{% block meta_description %}Sports control room with categorized coverage, fixtures, and league tables across major competitions.{% endblock %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto px-4 pt-32 pb-20">
+    <div class="relative overflow-hidden rounded-[2rem] border border-cyan-300/20 bg-gradient-to-br from-slate-900 via-cyan-950/40 to-emerald-950/40 p-6 md:p-10 mb-10">
+        <div class="absolute -top-24 -right-16 h-56 w-56 rounded-full bg-cyan-400/20 blur-3xl"></div>
+        <div class="absolute -bottom-24 -left-12 h-52 w-52 rounded-full bg-emerald-400/20 blur-3xl"></div>
+        <div class="relative z-10">
+            <p class="text-[11px] uppercase tracking-[0.35em] text-cyan-200/80 mb-4">Sports Control Room</p>
+            <h1 class="text-4xl md:text-5xl font-black text-white tracking-tight">Sports Hub</h1>
+            <p class="mt-4 text-white/75 max-w-3xl">Switch between fresh sports stories, upcoming fixtures, and live league tables. This page is intentionally different from the regular feed so sports feels like its own product.</p>
+        </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 mb-8">
+        <a href="{% url 'blog:sports_hub' %}?tab=news" class="px-5 py-2.5 rounded-full border text-sm font-semibold uppercase tracking-[0.18em] transition-all {% if active_tab == 'news' %}bg-cyan-400/25 border-cyan-300 text-cyan-100{% else %}bg-white/5 border-white/10 text-white/65 hover:border-cyan-300/60 hover:text-cyan-100{% endif %}">News</a>
+        <a href="{% url 'blog:sports_hub' %}?tab=fixtures" class="px-5 py-2.5 rounded-full border text-sm font-semibold uppercase tracking-[0.18em] transition-all {% if active_tab == 'fixtures' %}bg-emerald-400/20 border-emerald-300 text-emerald-100{% else %}bg-white/5 border-white/10 text-white/65 hover:border-emerald-300/60 hover:text-emerald-100{% endif %}">Fixtures</a>
+        <a href="{% url 'blog:sports_hub' %}?tab=tables" class="px-5 py-2.5 rounded-full border text-sm font-semibold uppercase tracking-[0.18em] transition-all {% if active_tab == 'tables' %}bg-amber-400/20 border-amber-300 text-amber-100{% else %}bg-white/5 border-white/10 text-white/65 hover:border-amber-300/60 hover:text-amber-100{% endif %}">League Tables</a>
+    </div>
+
+    {% if active_tab == 'news' %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for post in sports_news %}
+                {% include "blog/includes/_post_card.html" %}
+            {% empty %}
+                <div class="col-span-full rounded-3xl border border-white/10 bg-white/5 p-8 text-center text-white/70">No sports stories yet. Run fetch from analytics to populate this stream.</div>
+            {% endfor %}
+        </div>
+    {% elif active_tab == 'fixtures' %}
+        <div class="space-y-6">
+            {% for league in fixtures_by_league %}
+                <div class="rounded-3xl border border-emerald-300/20 bg-emerald-950/20 backdrop-blur p-5">
+                    <h2 class="text-xl font-black text-emerald-100 mb-4">{{ league.league }}</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead>
+                                <tr class="text-emerald-100/80 border-b border-emerald-200/20">
+                                    <th class="text-left py-2 pr-4">Home</th>
+                                    <th class="text-left py-2 pr-4">Away</th>
+                                    <th class="text-left py-2 pr-4">Kickoff</th>
+                                    <th class="text-left py-2">Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for fix in league.fixtures %}
+                                    <tr class="border-b border-white/10 text-white/80">
+                                        <td class="py-2 pr-4">{{ fix.home }}</td>
+                                        <td class="py-2 pr-4">{{ fix.away }}</td>
+                                        <td class="py-2 pr-4">{{ fix.kickoff|default:"-" }}</td>
+                                        <td class="py-2">{{ fix.score|default:"-" }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="4" class="py-4 text-white/50">No fixture data right now.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="space-y-6">
+            {% for league in tables_by_league %}
+                <div class="rounded-3xl border border-amber-300/20 bg-amber-950/20 backdrop-blur p-5">
+                    <h2 class="text-xl font-black text-amber-100 mb-4">{{ league.league }}</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead>
+                                <tr class="text-amber-100/80 border-b border-amber-200/20">
+                                    <th class="text-left py-2 pr-4">#</th>
+                                    <th class="text-left py-2 pr-4">Team</th>
+                                    <th class="text-left py-2 pr-4">MP</th>
+                                    <th class="text-left py-2 pr-4">Pts</th>
+                                    <th class="text-left py-2 pr-4">GF</th>
+                                    <th class="text-left py-2">GA</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in league.rows %}
+                                    <tr class="border-b border-white/10 text-white/80">
+                                        <td class="py-2 pr-4">{{ row.rank }}</td>
+                                        <td class="py-2 pr-4 font-semibold text-white">{{ row.team }}</td>
+                                        <td class="py-2 pr-4">{{ row.matches }}</td>
+                                        <td class="py-2 pr-4">{{ row.points }}</td>
+                                        <td class="py-2 pr-4">{{ row.goals }}</td>
+                                        <td class="py-2">{{ row.conceded }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="6" class="py-4 text-white/50">No table data right now.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

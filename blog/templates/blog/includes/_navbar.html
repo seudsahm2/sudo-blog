@@ -26,6 +26,7 @@
             </div>
 
             <a href="{{ about_url|default:'/about/' }}" class="text-sm font-medium text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:text-neon-pink transition-colors">About</a>
+            <a href="{% url 'blog:sports_hub' %}" class="text-sm font-medium text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:text-neon-pink transition-colors">Sports</a>
             <a href="{{ privacy_policy_url|default:'/privacy-policy/' }}" class="text-sm font-medium text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:text-neon-pink transition-colors">Privacy</a>
             <a href="{{ contact_url|default:'/contact/' }}" class="text-sm font-medium text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:text-neon-pink transition-colors">Contact</a>
             {% if user.is_authenticated %}

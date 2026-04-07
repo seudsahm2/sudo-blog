@@ -57,7 +57,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
     "taggit",
+    "api.apps.ApiConfig",
     "blog.apps.BlogConfig",
 ]
 
@@ -218,14 +220,51 @@ SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS", default=_hsts_default, cast=
 SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=FORCE_HTTPS, cast=bool)
 SECURE_HSTS_PRELOAD = config("SECURE_HSTS_PRELOAD", default=FORCE_HTTPS, cast=bool)
 
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": config("API_PAGE_SIZE", default=20, cast=int),
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": config("API_THROTTLE_ANON", default="120/min"),
+        "user": config("API_THROTTLE_USER", default="600/min"),
+        "auth_login": config("API_THROTTLE_AUTH_LOGIN", default="20/min"),
+        "newsletter_public": config("API_THROTTLE_NEWSLETTER_PUBLIC", default="30/min"),
+        "pipeline_run": config("API_THROTTLE_PIPELINE_RUN", default="60/min"),
+    },
+}
+
+if not DEBUG:
+    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = [
+        "rest_framework.renderers.JSONRenderer",
+    ]
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 NEWSAPI_KEY = config('NEWSAPI_KEY', default='')
+NEWSAPI_COUNTRY = config('NEWSAPI_COUNTRY', default='us')
+NEWSAPI_QUERY = config('NEWSAPI_QUERY', default='')
+GNEWS_COUNTRY = config('GNEWS_COUNTRY', default='us')
+GNEWS_TOPIC = config('GNEWS_TOPIC', default='')
+GNEWS_QUERY = config('GNEWS_QUERY', default='')
 GNEWS_KEY = config('GNEWS_KEY', default='')
 MEDIASTACK_KEY = config('MEDIASTACK_KEY', default='')
+NEWSDATA_COUNTRY = config('NEWSDATA_COUNTRY', default='us')
+NEWSDATA_QUERY = config('NEWSDATA_QUERY', default='')
+NEWSDATA_KEY = config('NEWSDATA_KEY', default='')
+GUARDIAN_KEY = config('GUARDIAN_KEY', default='')
 
 CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://127.0.0.1:6379/0')
 CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default=CELERY_BROKER_URL)
@@ -249,6 +288,7 @@ AI_SUMMARY_PROVIDER = config('AI_SUMMARY_PROVIDER', default='gemini')
 SUMMARIZER_PROMPT_MODE = config('SUMMARIZER_PROMPT_MODE', default='brief')
 
 GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
+GEMINI_API_KEYS = config('GEMINI_API_KEYS', default='')
 GEMINI_MODEL = config('GEMINI_MODEL', default='gemini-2.0-flash')
 
 GROQ_API_KEY = config('GROQ_API_KEY', default='')

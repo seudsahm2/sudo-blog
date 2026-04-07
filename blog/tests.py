@@ -1,13 +1,15 @@
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.management import call_command
-from io import StringIO
+from io import BytesIO, StringIO
 from unittest.mock import patch
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from datetime import timedelta
 from django.core.cache import cache
+from urllib.error import HTTPError
+from urllib.parse import parse_qs, urlparse
 
 from .models import Article, Bookmark, Comment, Like, NewsSource, NewsletterSubscriber, Post
 from .admin import _clear_post_click_metrics, _clear_source_click_metrics
@@ -73,6 +75,16 @@ class NewsIngestionServiceTests(TestCase):
             "https://example.com/a",
         )
         self.assertEqual(hash_a, hash_b)
+
+    @override_settings(NEWSAPI_COUNTRY="gb", NEWSAPI_QUERY="world")
+    def test_newsapi_build_url_includes_required_query_parameters(self):
+        adapter = self.service.get_adapter(self.source, max_items=15)
+        url = adapter.build_url()
+        parsed = parse_qs(urlparse(url).query)
+
+        self.assertEqual(parsed["country"][0], "gb")
+        self.assertEqual(parsed["q"][0], "world")
+        self.assertEqual(parsed["pageSize"][0], "15")
 
     def test_ingest_items_creates_and_updates(self):
         items = [
@@ -243,7 +255,82 @@ class SummarizationTests(TestCase):
         self.assertEqual(article.status, Article.Status.SUMMARIZED)
         self.assertEqual(article.summary_provider, "fallback")
         self.assertEqual(article.summary_model, "extractive")
+        self.assertEqual(article.summary_category, "Others")
         self.assertGreater(article.summary_total_tokens, 0)
+
+    @override_settings(AI_SUMMARY_PROVIDER="gemini", GEMINI_API_KEY="", GROQ_API_KEY="")
+    def test_fallback_category_detects_sport_keywords(self):
+        article = Article.objects.create(
+            source=self.source,
+            title="League preview",
+            body="The football league match has title contenders this week.",
+            source_url="https://example.com/sport-story",
+        )
+        summarizer = ArticleSummarizationService()
+        summarizer.summarize_article(article)
+
+        article.refresh_from_db()
+        self.assertEqual(article.summary_provider, "fallback")
+        self.assertEqual(article.summary_category, "Sport")
+
+    @override_settings(
+        AI_SUMMARY_PROVIDER="gemini",
+        GEMINI_API_KEYS="key_one,key_two",
+        GEMINI_API_KEY="",
+        GROQ_API_KEY="",
+    )
+    def test_gemini_tries_next_key_when_first_key_is_rate_limited(self):
+        payload = {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [
+                            {
+                                "text": '{"summary":"Chip makers rallied after earnings.","category":"Tech"}'
+                            }
+                        ]
+                    }
+                }
+            ],
+            "usageMetadata": {
+                "promptTokenCount": 20,
+                "candidatesTokenCount": 12,
+                "totalTokenCount": 32,
+            },
+        }
+
+        class DummyResponse:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def read(self):
+                import json
+
+                return json.dumps(payload).encode("utf-8")
+
+        first_key_error = HTTPError(
+            url="https://generativelanguage.googleapis.com/test",
+            code=429,
+            msg="Too Many Requests",
+            hdrs=None,
+            fp=BytesIO(b'{"error":"quota exceeded"}'),
+        )
+
+        with patch(
+            "blog.services.summarization.urlopen",
+            side_effect=[first_key_error, DummyResponse()],
+        ):
+            summary, meta = ArticleSummarizationService().summarize_text("AI chips demand is rising globally.")
+
+        self.assertTrue(summary)
+        self.assertEqual(meta["provider"], "gemini")
+        self.assertEqual(meta["category"], "Tech")
+        self.assertEqual(meta["gemini_key_slot"], 2)
 
     @override_settings(AI_SUMMARY_PROVIDER="gemini", GEMINI_API_KEY="", GROQ_API_KEY="")
     def test_summarize_pending_articles_updates_only_ingested(self):
@@ -314,7 +401,7 @@ class AutoPublishWorkflowTests(TestCase):
     def test_auto_publish_trusted_articles_publishes_qualified_content(self):
         article = Article.objects.create(
             source=self.source,
-            title="Qualified article",
+            title="Qualified article about AI chips",
             body="Full source body text",
             summary="Qualified summary",
             image_url="https://example.com/image.jpg",
@@ -335,6 +422,67 @@ class AutoPublishWorkflowTests(TestCase):
         self.assertEqual(published_post.body, "Qualified summary")
         self.assertEqual(published_post.summary, "Qualified summary")
         self.assertEqual(published_post.cover_image_url, "https://example.com/image.jpg")
+        self.assertIsNotNone(published_post.category)
+        self.assertEqual(published_post.category.name, "Tech")
+
+    @override_settings(
+        AUTO_PUBLISH_MIN_TRUST_SCORE=70,
+        AUTO_PUBLISH_MIN_ORIGINALITY=40,
+        AUTO_PUBLISH_REQUIRE_AD_SAFE=True,
+    )
+    def test_auto_publish_assigns_sport_category_for_openligadb(self):
+        sports_source = NewsSource.objects.create(
+            name="Sports Data",
+            provider=NewsSource.Provider.OPENLIGADB,
+            auto_publish=True,
+            trust_score=90,
+        )
+        article = Article.objects.create(
+            source=sports_source,
+            title="Bundesliga match preview",
+            body="League match fixture and lineups",
+            summary="League fixture summary",
+            source_url="https://example.com/sport-preview",
+            originality_score=70,
+            is_ad_safe=True,
+            status=Article.Status.SUMMARIZED,
+        )
+
+        result = auto_publish_trusted_articles(limit=10)
+        article.refresh_from_db()
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["published"], 1)
+        self.assertEqual(article.status, Article.Status.PUBLISHED)
+        published_post = Post.objects.get(source_article=article)
+        self.assertIsNotNone(published_post.category)
+        self.assertEqual(published_post.category.name, "Sport")
+
+    @override_settings(
+        AUTO_PUBLISH_MIN_TRUST_SCORE=70,
+        AUTO_PUBLISH_MIN_ORIGINALITY=40,
+        AUTO_PUBLISH_REQUIRE_AD_SAFE=True,
+    )
+    def test_auto_publish_uses_ai_summary_category_when_available(self):
+        article = Article.objects.create(
+            source=self.source,
+            title="Election markets update",
+            body="AI and software stocks advanced after a policy update.",
+            summary="Software and chip firms gained after earnings and policy signals.",
+            summary_category="Tech",
+            source_url="https://example.com/ai-category-priority",
+            originality_score=70,
+            is_ad_safe=True,
+            status=Article.Status.SUMMARIZED,
+        )
+
+        result = auto_publish_trusted_articles(limit=10)
+        article.refresh_from_db()
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["published"], 1)
+        published_post = Post.objects.get(source_article=article)
+        self.assertEqual(published_post.category.name, "Tech")
 
     @override_settings(
         AUTO_PUBLISH_MIN_TRUST_SCORE=70,
@@ -572,6 +720,25 @@ class SeoAndHomepageTests(TestCase):
         self.assertIn("fresh_auto_posts", response.context)
         self.assertIn("editor_posts", response.context)
         self.assertTrue(response.context["show_in_feed_ad"])
+
+    def test_sports_hub_renders_tables_tab(self):
+        self.source.provider = NewsSource.Provider.OPENLIGADB
+        self.source.save(update_fields=["provider", "updated"])
+
+        def fake_openliga(endpoint):
+            if endpoint.startswith("getbltable"):
+                return [{"platz": 1, "teamName": "Demo FC", "points": 27, "goals": 21, "opponentGoals": 8, "matches": 10}]
+            if endpoint.startswith("getmatchdata"):
+                return [{"Team1": {"TeamName": "Demo FC"}, "Team2": {"TeamName": "City FC"}, "MatchDateTime": "2026-04-10T18:00:00", "MatchResults": []}]
+            return []
+
+        with patch("blog.views._fetch_openligadb_endpoint", side_effect=fake_openliga):
+            response = self.client.get(reverse("blog:sports_hub"), {"tab": "tables"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "League Tables")
+        self.assertContains(response, "Premier League")
+        self.assertContains(response, "Demo FC")
 
     @override_settings(
         ADSENSE_ENABLED=True,

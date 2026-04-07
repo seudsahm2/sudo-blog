@@ -96,6 +96,10 @@ class NewsSource(models.Model):
         NEWSAPI = 'NEWSAPI', 'NewsAPI'
         GNEWS = 'GNEWS', 'GNews'
         MEDIASTACK = 'MEDIASTACK', 'MediaStack'
+        NEWSDATA = 'NEWSDATA', 'NewsData'
+        GUARDIAN = 'GUARDIAN', 'The Guardian'
+        SPACEFLIGHT = 'SPACEFLIGHT', 'Spaceflight News'
+        OPENLIGADB = 'OPENLIGADB', 'OpenLigaDB'
         TELEGRAM = 'TELEGRAM', 'Telegram'
         CUSTOM = 'CUSTOM', 'Custom'
 
@@ -139,6 +143,7 @@ class Article(models.Model):
     summary = models.TextField(blank=True)
     summary_provider = models.CharField(max_length=20, blank=True)
     summary_model = models.CharField(max_length=80, blank=True)
+    summary_category = models.CharField(max_length=20, blank=True)
     summary_prompt_mode = models.CharField(max_length=20, blank=True)
     summary_prompt_tokens = models.PositiveIntegerField(default=0)
     summary_completion_tokens = models.PositiveIntegerField(default=0)

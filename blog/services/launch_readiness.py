@@ -54,6 +54,8 @@ def compute_launch_readiness_checks():
         NewsSource.Provider.NEWSAPI: bool(getattr(settings, "NEWSAPI_KEY", "").strip()),
         NewsSource.Provider.GNEWS: bool(getattr(settings, "GNEWS_KEY", "").strip()),
         NewsSource.Provider.MEDIASTACK: bool(getattr(settings, "MEDIASTACK_KEY", "").strip()),
+        NewsSource.Provider.NEWSDATA: bool(getattr(settings, "NEWSDATA_KEY", "").strip()),
+        NewsSource.Provider.GUARDIAN: bool(getattr(settings, "GUARDIAN_KEY", "").strip()),
     }
 
     active_sources = list(NewsSource.objects.filter(is_active=True).values("name", "provider"))

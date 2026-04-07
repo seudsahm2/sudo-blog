@@ -37,6 +37,8 @@ class BaseProviderAdapter:
             NewsSource.Provider.NEWSAPI.value: "NEWSAPI_KEY",
             NewsSource.Provider.GNEWS.value: "GNEWS_KEY",
             NewsSource.Provider.MEDIASTACK.value: "MEDIASTACK_KEY",
+            NewsSource.Provider.NEWSDATA.value: "NEWSDATA_KEY",
+            NewsSource.Provider.GUARDIAN.value: "GUARDIAN_KEY",
         }
         key_name = provider_to_setting.get(self.source.provider)
         return getattr(settings, key_name, "") if key_name else ""
@@ -151,12 +153,16 @@ class NewsApiAdapter(BaseProviderAdapter):
     items_key = "articles"
 
     def build_url(self) -> str:
+        country = (getattr(settings, "NEWSAPI_COUNTRY", "us") or "us").strip()
+        query = (getattr(settings, "NEWSAPI_QUERY", "") or "").strip()
         params = {
             "apiKey": self.get_api_key(),
-            "language": "en",
-            "sortBy": "publishedAt",
             "pageSize": self.max_items,
         }
+        if country:
+            params["country"] = country
+        if query:
+            params["q"] = query
         base = self.source.base_url or "https://newsapi.org/v2/top-headlines"
         return f"{base}?{urlencode(params)}"
 
@@ -187,11 +193,20 @@ class GNewsAdapter(BaseProviderAdapter):
     items_key = "articles"
 
     def build_url(self) -> str:
+        country = (getattr(settings, "GNEWS_COUNTRY", "us") or "us").strip()
+        topic = (getattr(settings, "GNEWS_TOPIC", "") or "").strip()
+        query = (getattr(settings, "GNEWS_QUERY", "") or "").strip()
         params = {
             "apikey": self.get_api_key(),
             "lang": "en",
             "max": self.max_items,
         }
+        if country:
+            params["country"] = country
+        if topic:
+            params["topic"] = topic
+        if query:
+            params["q"] = query
         base = self.source.base_url or "https://gnews.io/api/v4/top-headlines"
         return f"{base}?{urlencode(params)}"
 
@@ -248,6 +263,174 @@ class MediaStackAdapter(BaseProviderAdapter):
                     "image_url": image_url,
                     "source_url": source_url,
                     "external_id": source_url,
+                }
+            )
+        return results
+
+
+class NewsDataAdapter(BaseProviderAdapter):
+    items_key = "results"
+
+    def build_url(self) -> str:
+        country = (getattr(settings, "NEWSDATA_COUNTRY", "us") or "us").strip()
+        query = (getattr(settings, "NEWSDATA_QUERY", "") or "").strip()
+        params = {
+            "apikey": self.get_api_key(),
+            "language": "en",
+            "size": self.max_items,
+        }
+        if country:
+            params["country"] = country
+        if query:
+            params["q"] = query
+        base = self.source.base_url or "https://newsdata.io/api/1/news"
+        return f"{base}?{urlencode(params)}"
+
+    def parse_items(self, payload: Dict) -> List[Dict]:
+        items = payload.get(self.items_key, [])
+        results = []
+        for item in items:
+            title = (item.get("title") or "").strip()
+            body = (item.get("content") or item.get("description") or "").strip()
+            source_url = (item.get("link") or "").strip()
+            image_url = (item.get("image_url") or "").strip()
+            if not (title and body and source_url):
+                continue
+            body, image_url = self.enrich_content(source_url=source_url, body=body, image_url=image_url)
+            results.append(
+                {
+                    "title": title,
+                    "body": body,
+                    "image_url": image_url,
+                    "source_url": source_url,
+                    "external_id": item.get("article_id") or source_url,
+                }
+            )
+        return results
+
+
+class GuardianAdapter(BaseProviderAdapter):
+    items_key = "results"
+
+    def build_url(self) -> str:
+        params = {
+            "api-key": self.get_api_key(),
+            "show-fields": "trailText,bodyText,thumbnail,headline",
+            "page-size": self.max_items,
+            "order-by": "newest",
+        }
+        base = self.source.base_url or "https://content.guardianapis.com/search"
+        return f"{base}?{urlencode(params)}"
+
+    def parse_items(self, payload: Dict) -> List[Dict]:
+        response = payload.get("response", {}) if isinstance(payload, dict) else {}
+        items = response.get(self.items_key, [])
+        results = []
+        for item in items:
+            fields = item.get("fields", {}) or {}
+            title = (fields.get("headline") or item.get("webTitle") or "").strip()
+            body = (fields.get("bodyText") or fields.get("trailText") or "").strip()
+            source_url = (item.get("webUrl") or "").strip()
+            image_url = (fields.get("thumbnail") or "").strip()
+            if not (title and body and source_url):
+                continue
+            body, image_url = self.enrich_content(source_url=source_url, body=body, image_url=image_url)
+            results.append(
+                {
+                    "title": title,
+                    "body": body,
+                    "image_url": image_url,
+                    "source_url": source_url,
+                    "external_id": item.get("id") or source_url,
+                }
+            )
+        return results
+
+
+class SpaceflightNewsAdapter(BaseProviderAdapter):
+    items_key = "results"
+
+    def build_url(self) -> str:
+        params = {
+            "limit": self.max_items,
+            "ordering": "-published_at",
+        }
+        base = self.source.base_url or "https://api.spaceflightnewsapi.net/v4/articles/"
+        return f"{base}?{urlencode(params)}"
+
+    def parse_items(self, payload: Dict) -> List[Dict]:
+        items = payload.get(self.items_key, [])
+        results = []
+        for item in items:
+            title = (item.get("title") or "").strip()
+            body = (item.get("summary") or "").strip()
+            source_url = (item.get("url") or "").strip()
+            image_url = (item.get("image_url") or "").strip()
+            if not (title and body and source_url):
+                continue
+            body, image_url = self.enrich_content(source_url=source_url, body=body, image_url=image_url)
+            results.append(
+                {
+                    "title": title,
+                    "body": body,
+                    "image_url": image_url,
+                    "source_url": source_url,
+                    "external_id": str(item.get("id") or source_url),
+                }
+            )
+        return results
+
+
+class OpenLigaDbAdapter(BaseProviderAdapter):
+    items_key = "matches"
+
+    def build_url(self) -> str:
+        return self.source.base_url or "https://api.openligadb.de/getmatchdata/bl1"
+
+    def fetch_payload(self) -> Dict:
+        url = self.build_url()
+        request = Request(url, headers={"User-Agent": "sudo-blog-ingestor/1.0"})
+        with urlopen(request, timeout=20) as response:
+            data = json.loads(response.read().decode("utf-8"))
+        if isinstance(data, list):
+            return {self.items_key: data[: self.max_items]}
+        return {self.items_key: []}
+
+    def parse_items(self, payload: Dict) -> List[Dict]:
+        items = payload.get(self.items_key, [])
+        results = []
+        for item in items:
+            team1 = ((item.get("Team1") or {}).get("TeamName") or "Home team").strip()
+            team2 = ((item.get("Team2") or {}).get("TeamName") or "Away team").strip()
+            result_block = None
+            match_results = item.get("MatchResults") or []
+            if match_results:
+                result_block = match_results[-1]
+            score1 = result_block.get("PointsTeam1") if result_block else None
+            score2 = result_block.get("PointsTeam2") if result_block else None
+            if score1 is not None and score2 is not None:
+                title = f"{team1} vs {team2}: {score1}-{score2}"
+            else:
+                title = f"{team1} vs {team2}"
+
+            kickoff = (item.get("MatchDateTimeUTC") or item.get("MatchDateTime") or "").strip()
+            group = ((item.get("Group") or {}).get("GroupName") or "League").strip()
+            body = (
+                f"Sports update from {group}. Fixture: {team1} against {team2}. "
+                f"Kickoff schedule: {kickoff or 'TBD'}. "
+                "Track match momentum, standings impact, and recent team form in one place."
+            )
+            external_id = str(item.get("MatchID") or "")
+            if not external_id:
+                continue
+            source_url = f"https://www.openligadb.de/match/{external_id}"
+            results.append(
+                {
+                    "title": title,
+                    "body": body,
+                    "image_url": "",
+                    "source_url": source_url,
+                    "external_id": external_id,
                 }
             )
         return results
@@ -336,6 +519,10 @@ class NewsIngestionService:
         NewsSource.Provider.NEWSAPI.value: NewsApiAdapter,
         NewsSource.Provider.GNEWS.value: GNewsAdapter,
         NewsSource.Provider.MEDIASTACK.value: MediaStackAdapter,
+        NewsSource.Provider.NEWSDATA.value: NewsDataAdapter,
+        NewsSource.Provider.GUARDIAN.value: GuardianAdapter,
+        NewsSource.Provider.SPACEFLIGHT.value: SpaceflightNewsAdapter,
+        NewsSource.Provider.OPENLIGADB.value: OpenLigaDbAdapter,
         NewsSource.Provider.TELEGRAM.value: TelegramAdapter,
     }
 
@@ -364,6 +551,10 @@ class NewsIngestionService:
             NewsSource.Provider.NEWSAPI,
             NewsSource.Provider.GNEWS,
             NewsSource.Provider.MEDIASTACK,
+            NewsSource.Provider.NEWSDATA,
+            NewsSource.Provider.GUARDIAN,
+            NewsSource.Provider.SPACEFLIGHT,
+            NewsSource.Provider.OPENLIGADB,
         }:
             min_words = max(
                 1,

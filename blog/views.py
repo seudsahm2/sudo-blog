@@ -17,6 +17,9 @@ from django.conf import settings
 from xml.sax.saxutils import escape
 from datetime import timedelta
 from math import exp
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+import json
 import csv
 
 from taggit.models import Tag
@@ -32,6 +35,33 @@ MONITORED_TASKS = [
     'auto_publish_trusted_articles',
     'rollback_auto_published_posts',
 ]
+
+
+OPENLIGA_MAIN_LEAGUES = [
+    {"code": "bl1", "name": "Bundesliga"},
+    {"code": "pl", "name": "Premier League"},
+    {"code": "laliga", "name": "La Liga"},
+    {"code": "sa", "name": "Serie A"},
+    {"code": "cl", "name": "Champions League"},
+]
+
+
+def _fetch_openligadb_endpoint(endpoint):
+    cache_key = f"sports:openligadb:{endpoint}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    url = f"https://api.openligadb.de/{endpoint}"
+    request = Request(url, headers={"User-Agent": "sudo-blog-sports-hub/1.0"})
+    try:
+        with urlopen(request, timeout=12) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, TimeoutError, ValueError):
+        data = []
+
+    cache.set(cache_key, data, timeout=5 * 60)
+    return data
 
 
 def _enforce_source_diversity(posts, max_per_source=2, limit=4):
@@ -550,6 +580,73 @@ def bookmarks_list(request):
     )
 
 
+@require_GET
+def sports_hub(request):
+    active_tab = (request.GET.get('tab') or 'news').strip().lower()
+    if active_tab not in {'news', 'fixtures', 'tables'}:
+        active_tab = 'news'
+
+    base = (
+        Post.published.select_related('author', 'category', 'source_article__source')
+        .prefetch_related('tags')
+        .annotate(
+            like_count=Count('likes', distinct=True),
+            comment_count=Count('comments', filter=Q(comments__approved=True), distinct=True),
+        )
+    )
+    sports_posts = list(
+        base.filter(
+            Q(source_article__source__provider=NewsSource.Provider.OPENLIGADB)
+        )
+        .order_by('-publish')[:24]
+    )
+
+    fixtures_by_league = []
+    tables_by_league = []
+    for league in OPENLIGA_MAIN_LEAGUES:
+        code = league['code']
+        fixtures_raw = _fetch_openligadb_endpoint(f'getmatchdata/{code}')
+        tables_raw = _fetch_openligadb_endpoint(f'getbltable/{code}')
+
+        fixtures = []
+        for item in (fixtures_raw or [])[:10]:
+            team1 = ((item.get('Team1') or {}).get('TeamName') or 'Home').strip()
+            team2 = ((item.get('Team2') or {}).get('TeamName') or 'Away').strip()
+            kickoff = (item.get('MatchDateTime') or item.get('MatchDateTimeUTC') or '').strip()
+            result_block = (item.get('MatchResults') or [])
+            final_score = result_block[-1] if result_block else {}
+            score = ''
+            if final_score.get('PointsTeam1') is not None and final_score.get('PointsTeam2') is not None:
+                score = f"{final_score.get('PointsTeam1')} - {final_score.get('PointsTeam2')}"
+            fixtures.append({'home': team1, 'away': team2, 'kickoff': kickoff, 'score': score})
+
+        standings = []
+        for row in (tables_raw or [])[:12]:
+            standings.append(
+                {
+                    'rank': row.get('platz') or row.get('rank') or row.get('position') or '',
+                    'team': row.get('teamName') or row.get('team') or '',
+                    'points': row.get('points') or row.get('punkte') or 0,
+                    'goals': row.get('goals') or row.get('tore') or 0,
+                    'conceded': row.get('opponentGoals') or row.get('gegentore') or 0,
+                    'matches': row.get('matches') or row.get('spiele') or 0,
+                }
+            )
+
+        fixtures_by_league.append({'league': league['name'], 'code': code, 'fixtures': fixtures})
+        tables_by_league.append({'league': league['name'], 'code': code, 'rows': standings})
+
+    return render(
+        request,
+        'blog/sports/hub.html',
+        {
+            'active_tab': active_tab,
+            'sports_news': _rank_homepage_posts(sports_posts)[:12],
+            'fixtures_by_league': fixtures_by_league,
+            'tables_by_league': tables_by_league,
+            'canonical_url': request.build_absolute_uri(),
+        },
+    )
 @require_POST
 def newsletter_subscribe(request):
     form = NewsletterSubscriptionForm(request.POST)
@@ -970,6 +1067,7 @@ def ads_txt(request):
 def sitemap_xml(request):
     static_urls = [
         reverse('blog:post_list'),
+        reverse('blog:sports_hub'),
         reverse('blog:legal_page', kwargs={'page': 'privacy'}),
         reverse('blog:legal_page', kwargs={'page': 'about'}),
         reverse('blog:legal_page', kwargs={'page': 'disclaimer'}),
