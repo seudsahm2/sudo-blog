@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Stunning Blog Default Cover</title>
+  <desc id="desc">Default visual for sitemap image metadata.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="60%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#831843"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="180" cy="120" r="120" fill="#38bdf8" opacity="0.2"/>
+  <circle cx="1030" cy="520" r="180" fill="#f472b6" opacity="0.2"/>
+  <text x="80" y="320" font-family="Segoe UI, Arial, sans-serif" font-size="74" font-weight="700" fill="#ffffff">
+    Stunning Blog
+  </text>
+  <text x="80" y="390" font-family="Segoe UI, Arial, sans-serif" font-size="34" fill="#e2e8f0">
+    Curated stories and AI-assisted summaries
+  </text>
+</svg>

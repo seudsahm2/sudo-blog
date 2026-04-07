@@ -1,5 +1,13 @@
 {% extends "blog/base.html" %}
 
+{% block meta_description %}{{ post.body|striptags|truncatechars:160 }}{% endblock %}
+{% block og_title %}{{ post.title }}{% endblock %}
+{% block og_description %}{{ post.body|striptags|truncatechars:180 }}{% endblock %}
+{% block og_image %}{{ social_image_url }}{% endblock %}
+{% block twitter_title %}{{ post.title }}{% endblock %}
+{% block twitter_description %}{{ post.body|striptags|truncatechars:180 }}{% endblock %}
+{% block twitter_image %}{{ social_image_url }}{% endblock %}
+
 {% block title %}{{ post.title }}{% endblock %}
 
 {% block content %}
@@ -22,7 +30,20 @@
                 <span>{{ post.publish|date:"M d, Y" }}</span>
                 <span class="w-1 h-1 rounded-full bg-white/50"></span>
                 <span>{{ post.get_read_time }} min read</span>
+                {% if post.auto_generated %}
+                    <span class="w-1 h-1 rounded-full bg-white/50"></span>
+                    <span class="text-neon-cyan uppercase tracking-wider">Auto</span>
+                {% endif %}
            </div>
+
+           {% if post.source_article and post.source_article.source %}
+               <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-slate-500 dark:text-white/60 mb-5">
+                   <span>Source:</span>
+                   <span class="font-semibold text-slate-800 dark:text-white">{{ post.source_article.source.name }}</span>
+                   <span class="text-white/30">&bull;</span>
+                   <span>Fetched {{ post.source_article.fetched_at|timesince }} ago</span>
+               </div>
+           {% endif %}
            
            <h1 class="text-4xl md:text-6xl font-black text-slate-900 dark:text-white leading-tight mb-8 drop-shadow-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-white/70">
                {{ post.title }}
@@ -59,6 +80,27 @@
 
         <!-- 3. Glass Article Body -->
         <div class="relative bg-white/80 dark:bg-white/5 backdrop-blur-3xl rounded-3xl p-8 md:p-12 border border-white/20 shadow-2xl animate-fade-in-up">
+            {% if post.cover_image_url %}
+                <div class="mb-8 overflow-hidden rounded-2xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5">
+                    <img src="{{ post.cover_image_url }}" alt="{{ post.title }}" class="w-full h-auto object-cover" loading="lazy" referrerpolicy="no-referrer">
+                </div>
+            {% endif %}
+
+            {% if adsense_enabled and adsense_slot_in_article %}
+                <div class="mb-8 rounded-2xl border border-dashed border-black/10 dark:border-white/10 bg-white/60 dark:bg-white/5 px-4 py-5 text-center">
+                    <div class="text-[11px] uppercase tracking-[0.35em] text-slate-500 dark:text-white/35 mb-3">Sponsored</div>
+                    <ins class="adsbygoogle block min-h-[120px]"
+                        style="display:block"
+                        data-ad-client="{{ adsense_client_id }}"
+                        data-ad-slot="{{ adsense_slot_in_article }}"
+                        data-ad-format="auto"
+                        data-full-width-responsive="true"></ins>
+                    <script>
+                        (adsbygoogle = window.adsbygoogle || []).push({});
+                    </script>
+                </div>
+            {% endif %}
+
             <div class="prose prose-lg md:prose-xl max-w-none 
                 prose-slate dark:prose-invert 
                 prose-headings:font-bold prose-headings:tracking-tight 
@@ -71,6 +113,23 @@
         </div>
 
     </div>
+
+    {% if adsense_enabled and adsense_slot_below_content %}
+    <div class="container mx-auto px-4 max-w-4xl mt-12">
+        <div class="rounded-3xl border border-dashed border-black/10 dark:border-white/10 bg-white/60 dark:bg-white/5 px-4 py-6 text-center">
+            <div class="text-[11px] uppercase tracking-[0.35em] text-slate-500 dark:text-white/35 mb-3">Sponsored</div>
+            <ins class="adsbygoogle block min-h-[120px]"
+                style="display:block"
+                data-ad-client="{{ adsense_client_id }}"
+                data-ad-slot="{{ adsense_slot_below_content }}"
+                data-ad-format="auto"
+                data-full-width-responsive="true"></ins>
+            <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Similar Posts Section -->
     {% if similar_posts %}
@@ -146,6 +205,19 @@
             <a href="{% url 'blog:post_share' post.id %}" class="p-3 rounded-full bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 dark:text-white/60 hover:text-neon-cyan transition-all">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
             </a>
+
+            <div class="w-px h-8 bg-black/10 dark:bg-white/10"></div>
+
+            <!-- Bookmark -->
+            <form id="bookmark-form" action="{% url 'blog:post_bookmark' post.id %}" method="post" class="flex items-center">
+                {% csrf_token %}
+                <button type="submit" class="group flex items-center gap-2 px-5 py-3 rounded-full bg-white dark:bg-white/5 hover:bg-amber-50 dark:hover:bg-amber-500/20 transition-all">
+                    <svg id="bookmark-icon" class="w-6 h-6 {% if is_bookmarked %}text-amber-500 fill-current{% else %}text-slate-400 dark:text-white/60 group-hover:text-amber-500{% endif %} transition-colors" fill="{% if is_bookmarked %}currentColor{% else %}none{% endif %}" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v17l-7-4-7 4V5z"></path>
+                    </svg>
+                    <span id="bookmark-count" class="font-bold text-slate-900 dark:text-white">{{ post.bookmarks.count }}</span>
+                </button>
+            </form>
         </div>
     </div>
 
@@ -184,6 +256,44 @@
                 } else {
                     icon.classList.add('text-slate-400', 'dark:text-white/60', 'group-hover:text-red-500');
                     icon.classList.remove('text-red-500', 'fill-current');
+                    icon.setAttribute('fill', 'none');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        document.getElementById('bookmark-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = this;
+            const icon = document.getElementById('bookmark-icon');
+            const count = document.getElementById('bookmark-count');
+
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.redirected || response.url.includes("login")) {
+                    alert("Please log in to save bookmarks.");
+                    window.location.href = "/accounts/login/?next=" + window.location.pathname;
+                    return null;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data) return;
+
+                count.textContent = data.count;
+                if (data.bookmarked) {
+                    icon.classList.remove('text-slate-400', 'dark:text-white/60', 'group-hover:text-amber-500');
+                    icon.classList.add('text-amber-500', 'fill-current');
+                    icon.setAttribute('fill', 'currentColor');
+                } else {
+                    icon.classList.add('text-slate-400', 'dark:text-white/60', 'group-hover:text-amber-500');
+                    icon.classList.remove('text-amber-500', 'fill-current');
                     icon.setAttribute('fill', 'none');
                 }
             })

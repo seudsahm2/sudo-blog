@@ -1,0 +1,26 @@
+{% extends "blog/base.html" %}
+
+{% block title %}Your Bookmarks{% endblock %}
+
+{% block content %}
+<section class="container mx-auto px-4 py-10 max-w-6xl">
+    <div class="mb-8 text-center">
+        <h1 class="text-3xl md:text-4xl font-black tracking-tight text-slate-900 dark:text-white">Saved Bookmarks</h1>
+        <p class="mt-2 text-slate-600 dark:text-white/65">Your personal reading queue across curated and automated stories.</p>
+    </div>
+
+    {% if posts %}
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for post in posts %}
+                {% include "blog/includes/_post_card.html" %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="rounded-2xl border border-dashed border-black/10 dark:border-white/15 bg-white/60 dark:bg-white/5 px-8 py-14 text-center">
+            <p class="text-lg font-semibold text-slate-900 dark:text-white">No bookmarks yet.</p>
+            <p class="mt-2 text-slate-600 dark:text-white/60">Open any story and hit the bookmark icon in the floating action bar.</p>
+            <a href="{% url 'blog:post_list' %}" class="inline-flex mt-6 px-6 py-3 rounded-xl bg-neon-purple hover:bg-neon-pink text-white font-bold transition-colors">Explore stories</a>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

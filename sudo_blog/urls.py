@@ -17,8 +17,17 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path,include
+from django.http import HttpResponse
+from blog import views as blog_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("blog/",include("blog.urls",namespace="blog"))
+    path("blog/",include("blog.urls",namespace="blog")),
+    path("healthz", lambda request: HttpResponse("ok", content_type="text/plain"), name="healthz"),
+    path("privacy-policy/", blog_views.legal_page, {'page': 'privacy'}, name='privacy_policy'),
+    path("about/", blog_views.legal_page, {'page': 'about'}, name='about_page'),
+    path("disclaimer/", blog_views.legal_page, {'page': 'disclaimer'}, name='disclaimer_page'),
+    path("contact/", blog_views.legal_page, {'page': 'contact'}, name='contact_page'),
+    path("robots.txt", blog_views.robots_txt, name='robots_txt_root'),
+    path("sitemap.xml", blog_views.sitemap_xml, name='sitemap_xml_root'),
 ]

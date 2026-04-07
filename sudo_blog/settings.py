@@ -10,8 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import sys
 from pathlib import Path
-from  decouple import config
+from urllib.parse import urlparse
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,12 +23,29 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-aoaqn7wt!v$+ipbn60s#adwk&mdpdkwz8r_1q!q&*1cikrsvr="
+SECRET_KEY = config("SECRET_KEY", default="django-insecure-aoaqn7wt!v$+ipbn60s#adwk&mdpdkwz8r_1q!q&*1cikrsvr=")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config("DEBUG", default=True, cast=bool)
 
-ALLOWED_HOSTS = []
+if not DEBUG and SECRET_KEY.startswith("django-insecure-"):
+    raise ValueError("Set a strong SECRET_KEY for production.")
+
+
+def _csv_list(value):
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+render_hostname = config("RENDER_EXTERNAL_HOSTNAME", default="").strip()
+_allowed_hosts = set(_csv_list(config("ALLOWED_HOSTS", default="127.0.0.1,localhost")))
+if render_hostname:
+    _allowed_hosts.add(render_hostname)
+ALLOWED_HOSTS = sorted(_allowed_hosts)
+
+_csrf_trusted_origins = set(_csv_list(config("CSRF_TRUSTED_ORIGINS", default="")))
+if render_hostname:
+    _csrf_trusted_origins.add(f"https://{render_hostname}")
+CSRF_TRUSTED_ORIGINS = sorted(_csrf_trusted_origins)
 
 
 # Application definition
@@ -44,6 +63,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -64,6 +84,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "blog.context_processors.site_settings",
             ],
         },
     },
@@ -75,11 +96,58 @@ WSGI_APPLICATION = "sudo_blog.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+
+def _postgres_from_url(database_url):
+    parsed = urlparse(database_url)
+    if parsed.scheme not in ("postgres", "postgresql"):
+        raise ValueError("DATABASE_URL must use postgres:// or postgresql://")
+
+    config_dict = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": parsed.path.lstrip("/") or "postgres",
+        "USER": parsed.username or "postgres",
+        "PASSWORD": parsed.password or "",
+        "HOST": parsed.hostname or "127.0.0.1",
+        "PORT": str(parsed.port or 5432),
+        "CONN_MAX_AGE": config("DB_CONN_MAX_AGE", default=60, cast=int),
+        "CONN_HEALTH_CHECKS": True,
     }
+    ssl_mode = config("DB_SSLMODE", default="")
+    if ssl_mode:
+        config_dict["OPTIONS"] = {"sslmode": ssl_mode}
+    return config_dict
+
+
+def _postgres_from_env():
+    config_dict = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": config("POSTGRES_DB", default="sudo_blog"),
+        "USER": config("POSTGRES_USER", default="postgres"),
+        "PASSWORD": config("POSTGRES_PASSWORD", default=""),
+        "HOST": config("POSTGRES_HOST", default="127.0.0.1"),
+        "PORT": config("POSTGRES_PORT", default="5432"),
+        "CONN_MAX_AGE": config("DB_CONN_MAX_AGE", default=60, cast=int),
+        "CONN_HEALTH_CHECKS": True,
+    }
+    ssl_mode = config("DB_SSLMODE", default="")
+    if ssl_mode:
+        config_dict["OPTIONS"] = {"sslmode": ssl_mode}
+    return config_dict
+
+
+USE_POSTGRES = config("USE_POSTGRES", default=False, cast=bool)
+DATABASE_URL = config("DATABASE_URL", default="")
+
+default_database = {
+    "ENGINE": "django.db.backends.sqlite3",
+    "NAME": BASE_DIR / "db.sqlite3",
+}
+
+if USE_POSTGRES:
+    default_database = _postgres_from_url(DATABASE_URL) if DATABASE_URL else _postgres_from_env()
+
+DATABASES = {
+    "default": default_database
 }
 
 
@@ -117,16 +185,122 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+REDIS_URL = config("REDIS_URL", default="")
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+            "TIMEOUT": 300,
+        }
+    }
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = config("USE_X_FORWARDED_HOST", default=True, cast=bool)
+
+FORCE_HTTPS = config("FORCE_HTTPS", default=not DEBUG, cast=bool)
+IS_TEST_RUN = "test" in sys.argv
+SECURE_SSL_REDIRECT = FORCE_HTTPS and not IS_TEST_RUN
+SESSION_COOKIE_SECURE = FORCE_HTTPS
+CSRF_COOKIE_SECURE = FORCE_HTTPS
+CSRF_COOKIE_HTTPONLY = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = config("SECURE_REFERRER_POLICY", default="strict-origin-when-cross-origin")
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
+
+_hsts_default = 31536000 if FORCE_HTTPS else 0
+SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS", default=_hsts_default, cast=int)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=FORCE_HTTPS, cast=bool)
+SECURE_HSTS_PRELOAD = config("SECURE_HSTS_PRELOAD", default=FORCE_HTTPS, cast=bool)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
+NEWSAPI_KEY = config('NEWSAPI_KEY', default='')
+GNEWS_KEY = config('GNEWS_KEY', default='')
+MEDIASTACK_KEY = config('MEDIASTACK_KEY', default='')
+
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://127.0.0.1:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default=CELERY_BROKER_URL)
+CELERY_TASK_ALWAYS_EAGER = config('CELERY_TASK_ALWAYS_EAGER', default=False, cast=bool)
+CELERY_TASK_TIME_LIMIT = config('CELERY_TASK_TIME_LIMIT', default=120, cast=int)
+
+MIN_ARTICLE_WORDS = config('MIN_ARTICLE_WORDS', default=120, cast=int)
+EXTERNAL_NEWS_MIN_ARTICLE_WORDS = config('EXTERNAL_NEWS_MIN_ARTICLE_WORDS', default=20, cast=int)
+FETCH_FULL_ARTICLE_CONTENT = config('FETCH_FULL_ARTICLE_CONTENT', default=True, cast=bool)
+FULL_ARTICLE_MIN_WORDS = config('FULL_ARTICLE_MIN_WORDS', default=140, cast=int)
+FULL_ARTICLE_FETCH_TIMEOUT_SECONDS = config('FULL_ARTICLE_FETCH_TIMEOUT_SECONDS', default=8, cast=int)
+ALLOW_INSECURE_SSL_FETCH = config('ALLOW_INSECURE_SSL_FETCH', default=True, cast=bool)
+MIN_ORIGINALITY_SCORE = config('MIN_ORIGINALITY_SCORE', default=35, cast=int)
+DISALLOWED_CONTENT_TERMS = [
+    term.strip().lower()
+    for term in config('DISALLOWED_CONTENT_TERMS', default='').split(',')
+    if term.strip()
+]
+
+AI_SUMMARY_PROVIDER = config('AI_SUMMARY_PROVIDER', default='gemini')
+SUMMARIZER_PROMPT_MODE = config('SUMMARIZER_PROMPT_MODE', default='brief')
+
+GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
+GEMINI_MODEL = config('GEMINI_MODEL', default='gemini-2.0-flash')
+
+GROQ_API_KEY = config('GROQ_API_KEY', default='')
+GROQ_MODEL = config('GROQ_MODEL', default='llama-3.3-70b-versatile')
+
+GEMINI_INPUT_COST_PER_1K = config('GEMINI_INPUT_COST_PER_1K', default='0.0001')
+GEMINI_OUTPUT_COST_PER_1K = config('GEMINI_OUTPUT_COST_PER_1K', default='0.0004')
+GROQ_INPUT_COST_PER_1K = config('GROQ_INPUT_COST_PER_1K', default='0.0006')
+GROQ_OUTPUT_COST_PER_1K = config('GROQ_OUTPUT_COST_PER_1K', default='0.0008')
+
+AUTO_PUBLISH_MIN_TRUST_SCORE = config('AUTO_PUBLISH_MIN_TRUST_SCORE', default=70, cast=int)
+AUTO_PUBLISH_REQUIRE_AD_SAFE = config('AUTO_PUBLISH_REQUIRE_AD_SAFE', default=True, cast=bool)
+AUTO_PUBLISH_MIN_ORIGINALITY = config('AUTO_PUBLISH_MIN_ORIGINALITY', default=40, cast=int)
+
+ADSENSE_ENABLED = config('ADSENSE_ENABLED', default=False, cast=bool)
+ADSENSE_CLIENT_ID = config('ADSENSE_CLIENT_ID', default='')
+ADSENSE_SLOT_HEADER = config('ADSENSE_SLOT_HEADER', default='')
+ADSENSE_SLOT_IN_FEED = config('ADSENSE_SLOT_IN_FEED', default='')
+ADSENSE_SLOT_IN_ARTICLE = config('ADSENSE_SLOT_IN_ARTICLE', default='')
+ADSENSE_SLOT_FOOTER = config('ADSENSE_SLOT_FOOTER', default='')
+ADSENSE_SLOT_TRENDING = config('ADSENSE_SLOT_TRENDING', default='')
+ADSENSE_SLOT_BELOW_CONTENT = config('ADSENSE_SLOT_BELOW_CONTENT', default='')
+ADSENSE_SLOT_STICKY_MOBILE = config('ADSENSE_SLOT_STICKY_MOBILE', default='')
+
+ANALYTICS_RETENTION_DAYS = config('ANALYTICS_RETENTION_DAYS', default=30, cast=int)
+MONITORING_RETENTION_DAYS = config('MONITORING_RETENTION_DAYS', default=30, cast=int)
+
+TASK_RETRY_MAX_ATTEMPTS = config('TASK_RETRY_MAX_ATTEMPTS', default=3, cast=int)
+TASK_RETRY_BACKOFF_BASE_SECONDS = config('TASK_RETRY_BACKOFF_BASE_SECONDS', default=2, cast=int)
+TASK_RETRY_BACKOFF_MAX_SECONDS = config('TASK_RETRY_BACKOFF_MAX_SECONDS', default=30, cast=int)
+TASK_RETRY_APPLY_SLEEP = config('TASK_RETRY_APPLY_SLEEP', default=False, cast=bool)
+
+FEATURE_FLAG_INGESTION_ENABLED = config('FEATURE_FLAG_INGESTION_ENABLED', default=True, cast=bool)
+FEATURE_FLAG_SUMMARIZATION_ENABLED = config('FEATURE_FLAG_SUMMARIZATION_ENABLED', default=True, cast=bool)
+FEATURE_FLAG_AUTOPUBLISH_ENABLED = config('FEATURE_FLAG_AUTOPUBLISH_ENABLED', default=True, cast=bool)
+FEATURE_FLAG_ROLLBACK_ENABLED = config('FEATURE_FLAG_ROLLBACK_ENABLED', default=True, cast=bool)
+FEATURE_FLAG_NEWSLETTER_DIGEST_ENABLED = config('FEATURE_FLAG_NEWSLETTER_DIGEST_ENABLED', default=True, cast=bool)
+FEATURE_FLAG_TELEGRAM_INGESTION_ENABLED = config('FEATURE_FLAG_TELEGRAM_INGESTION_ENABLED', default=False, cast=bool)
+FEATURE_FLAG_TELEGRAM_AUTOPUBLISH_ENABLED = config('FEATURE_FLAG_TELEGRAM_AUTOPUBLISH_ENABLED', default=False, cast=bool)
+
+TELEGRAM_FETCH_MAX_ITEMS = config('TELEGRAM_FETCH_MAX_ITEMS', default=10, cast=int)
+TELEGRAM_FETCH_INTERVAL_MINUTES = config('TELEGRAM_FETCH_INTERVAL_MINUTES', default=120, cast=int)
+TELEGRAM_REQUIRE_MANUAL_REVIEW = config('TELEGRAM_REQUIRE_MANUAL_REVIEW', default=True, cast=bool)
+TELEGRAM_SOURCE_ITEMS_JSON = config('TELEGRAM_SOURCE_ITEMS_JSON', default='[]')
+TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN', default='')
+TELEGRAM_CHAT_ID = config('TELEGRAM_CHAT_ID', default='')
+TELEGRAM_API_TIMEOUT_SECONDS = config('TELEGRAM_API_TIMEOUT_SECONDS', default=20, cast=int)
+
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Sudo Blog <no-reply@localhost>')

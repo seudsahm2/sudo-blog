@@ -14,3 +14,7 @@ class CommentForm(forms.ModelForm):
     class Meta:
         model = Comment
         fields = ["body"]
+
+
+class NewsletterSubscriptionForm(forms.Form):
+    email = forms.EmailField(max_length=254)

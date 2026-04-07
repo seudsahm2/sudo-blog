@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: sudo-blog
+    env: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    preDeployCommand: python manage.py migrate --noinput
+    startCommand: gunicorn sudo_blog.wsgi:application --bind 0.0.0.0:$PORT --workers ${WEB_CONCURRENCY:-3} --threads ${GUNICORN_THREADS:-2} --timeout ${GUNICORN_TIMEOUT:-120} --access-logfile - --error-logfile -
+    healthCheckPath: /healthz
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: FORCE_HTTPS
+        value: "True"
+      - key: USE_POSTGRES
+        value: "True"
+      - key: DB_SSLMODE
+        value: require
+      - key: PYTHON_VERSION
+        value: 3.12.4
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: "3"
+      - key: GUNICORN_THREADS
+        value: "2"
+      - key: GUNICORN_TIMEOUT
+        value: "120"

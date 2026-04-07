@@ -1,0 +1,148 @@
+{% extends "blog/base.html" %}
+
+{% block title %}Analytics Dashboard{% endblock %}
+{% block meta_description %}Staff analytics dashboard for click-through tracking and ranking feedback.{% endblock %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto px-4 pt-32 pb-20">
+    <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between mb-12">
+        <div>
+            <p class="text-xs uppercase tracking-[0.35em] text-neon-cyan mb-3">Staff Only</p>
+            <h1 class="text-4xl md:text-5xl font-black text-white tracking-tight">Analytics Dashboard</h1>
+            <p class="text-white/60 mt-3 max-w-2xl">Cached click totals are feeding homepage ranking and source-level feedback. This view shows the current top signals.</p>
+        </div>
+        <div class="grid gap-3 text-sm">
+            <div class="grid grid-cols-2 gap-3">
+                <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <div class="text-white/40 uppercase tracking-widest text-[11px]">Tracked Posts</div>
+                    <div class="text-2xl font-black text-white mt-1">{{ tracked_posts_count }}</div>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <div class="text-white/40 uppercase tracking-widest text-[11px]">Tracked Sources</div>
+                    <div class="text-2xl font-black text-white mt-1">{{ tracked_sources_count }}</div>
+                </div>
+            </div>
+            <div class="rounded-2xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-xs text-amber-100">
+                <div class="uppercase tracking-[0.25em] text-amber-200/80 mb-1">Retention Policy</div>
+                <div>TTL window: {{ analytics_retention_days }} day{{ analytics_retention_days|pluralize }}</div>
+                <div>Tracked signal timestamps: {{ retention_summary.tracked_last_seen_events }}</div>
+                <div>Oldest signal age: {% if retention_summary.oldest_signal_age_days != None %}{{ retention_summary.oldest_signal_age_days }} days{% else %}N/A{% endif %}</div>
+            </div>
+            <div class="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-xs text-cyan-100">
+                <div class="uppercase tracking-[0.25em] text-cyan-100/85 mb-1">Monitoring</div>
+                <div>Status: <span class="font-semibold">{{ monitoring_overview.status|upper }}</span></div>
+                <div>Active alerts: {{ monitoring_overview.alert_count }}</div>
+                <div>Never-run tasks: {{ monitoring_overview.never_run_count }}</div>
+                <a href="{% url 'blog:monitoring_health' %}" class="inline-block mt-2 text-cyan-100 underline underline-offset-4 hover:text-white transition-colors">Open health JSON</a>
+            </div>
+            <form action="{% url 'blog:run_manual_pipeline' %}" method="post" class="rounded-2xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-4 text-xs text-emerald-100 space-y-3">
+                {% csrf_token %}
+                <div class="uppercase tracking-[0.25em] text-emerald-100/85">Manual Pipeline Run</div>
+                <p class="text-emerald-50/90">Run ingestion and publishing directly from browser, no shell required.</p>
+                <div>
+                    <label class="block mb-1 text-emerald-100/90">Action</label>
+                    <select name="action" class="w-full rounded-lg border border-emerald-100/20 bg-slate-900/60 px-3 py-2 text-emerald-50">
+                        <option value="full">Fetch + Summarize + Publish</option>
+                        <option value="fetch">Fetch only</option>
+                        <option value="summarize">Summarize only</option>
+                        <option value="publish">Publish only</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block mb-1 text-emerald-100/90">Fetch</label>
+                        <input type="number" name="fetch_limit" min="1" max="100" value="20" class="w-full rounded-lg border border-emerald-100/20 bg-slate-900/60 px-2 py-2 text-emerald-50">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-emerald-100/90">Summarize</label>
+                        <input type="number" name="summarize_limit" min="1" max="200" value="50" class="w-full rounded-lg border border-emerald-100/20 bg-slate-900/60 px-2 py-2 text-emerald-50">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-emerald-100/90">Publish</label>
+                        <input type="number" name="publish_limit" min="1" max="200" value="50" class="w-full rounded-lg border border-emerald-100/20 bg-slate-900/60 px-2 py-2 text-emerald-50">
+                    </div>
+                </div>
+                <button type="submit" class="w-full rounded-xl bg-emerald-500 px-4 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition-colors">
+                    Run Now
+                </button>
+            </form>
+            {% if manual_ops_result %}
+                <div class="rounded-2xl border border-emerald-200/20 bg-slate-950/60 px-4 py-4 text-xs text-emerald-100">
+                    <div class="uppercase tracking-[0.25em] mb-2">Last Manual Run</div>
+                    <pre class="whitespace-pre-wrap break-words text-[11px] text-emerald-50/90">{{ manual_ops_result }}</pre>
+                </div>
+            {% endif %}
+            <div class="grid gap-3">
+                <a href="{% url 'blog:analytics_export_csv' %}" class="inline-flex justify-center rounded-2xl border border-neon-cyan/40 bg-neon-cyan/10 px-4 py-3 text-neon-cyan font-semibold hover:bg-neon-cyan/20 transition-colors">
+                    Export CSV
+                </a>
+                <a href="{% url 'blog:analytics_export_trending_snapshot' %}" class="inline-flex justify-center rounded-2xl border border-violet-400/40 bg-violet-400/10 px-4 py-3 text-violet-200 font-semibold hover:bg-violet-400/20 transition-colors">
+                    Export Trending Snapshot
+                </a>
+                <form action="{% url 'blog:analytics_reset_all' %}" method="post" class="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 space-y-3">
+                    {% csrf_token %}
+                    <label class="flex items-start gap-3 text-sm text-white/70">
+                        <input type="checkbox" name="confirm" value="yes" class="mt-1 rounded border-white/20 bg-white/5 text-rose-500 focus:ring-rose-500">
+                        <span>I understand this clears all cached analytics totals and timestamps.</span>
+                    </label>
+                    <button type="submit" class="w-full rounded-2xl bg-rose-500 px-4 py-3 font-semibold text-white hover:bg-rose-400 transition-colors">
+                        Reset All Analytics Cache
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid gap-8 lg:grid-cols-2">
+        <div class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-black text-white">Top Posts</h2>
+                <span class="text-xs uppercase tracking-widest text-white/40">Clicks + source feedback</span>
+            </div>
+            <div class="space-y-4">
+                {% for item in top_posts %}
+                    <div class="rounded-2xl border border-white/10 bg-black/10 px-4 py-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <a href="{{ item.post.get_absolute_url }}" class="text-white font-semibold hover:text-neon-cyan transition-colors">{{ item.post.title }}</a>
+                                <div class="text-xs text-white/40 mt-1">{{ item.post.publish|date:"M d, Y" }}{% if item.post.source_article and item.post.source_article.source %} • {{ item.post.source_article.source.name }}{% endif %}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xl font-black text-neon-cyan">{{ item.clicks }}</div>
+                                <div class="text-[11px] uppercase tracking-widest text-white/30">Clicks</div>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-white/50">No tracked post clicks yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-black text-white">Top Sources</h2>
+                <span class="text-xs uppercase tracking-widest text-white/40">Aggregated clicks</span>
+            </div>
+            <div class="space-y-4">
+                {% for item in top_sources %}
+                    <div class="rounded-2xl border border-white/10 bg-black/10 px-4 py-4">
+                        <div class="flex items-center justify-between gap-4">
+                            <div>
+                                <div class="text-white font-semibold">{{ item.source.name }}</div>
+                                <div class="text-xs text-white/40 mt-1">{{ item.source.get_provider_display }} • Trust {{ item.source.trust_score }}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xl font-black text-neon-pink">{{ item.clicks }}</div>
+                                <div class="text-[11px] uppercase tracking-widest text-white/30">Clicks</div>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-white/50">No tracked source clicks yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

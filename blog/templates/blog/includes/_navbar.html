@@ -25,9 +25,15 @@
                 </form>
             </div>
 
-            <a href="#" class="text-sm font-medium text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:text-neon-pink transition-colors">Categories</a>
-            <a href="#" class="text-sm font-medium text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:text-neon-pink transition-colors">About</a>
-            <a href="#" class="text-sm font-medium text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:text-neon-pink transition-colors">Contact</a>
+            <a href="{{ about_url|default:'/about/' }}" class="text-sm font-medium text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:text-neon-pink transition-colors">About</a>
+            <a href="{{ privacy_policy_url|default:'/privacy-policy/' }}" class="text-sm font-medium text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:text-neon-pink transition-colors">Privacy</a>
+            <a href="{{ contact_url|default:'/contact/' }}" class="text-sm font-medium text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:text-neon-pink transition-colors">Contact</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'blog:bookmarks_list' %}" class="text-sm font-medium text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:text-neon-pink transition-colors">Bookmarks</a>
+            {% endif %}
+            {% if user.is_staff %}
+                <a href="{% url 'blog:analytics_dashboard' %}" class="text-sm font-medium text-neon-cyan hover:text-white transition-colors">Analytics</a>
+            {% endif %}
 
             <!-- Theme Toggle -->
             <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-slate-600 dark:text-white">
