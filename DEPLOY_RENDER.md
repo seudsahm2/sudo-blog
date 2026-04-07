@@ -29,10 +29,8 @@ Use `.env.render.example` as your reference.
 If not using Blueprint:
 - Build Command:
   `pip install -r requirements.txt && python manage.py collectstatic --noinput`
-- Pre-Deploy Command:
-  `python manage.py migrate --noinput`
 - Start Command:
-  `gunicorn sudo_blog.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --threads 2 --timeout 120 --access-logfile - --error-logfile -`
+  `python manage.py migrate --noinput; gunicorn sudo_blog.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --threads 2 --timeout 120 --access-logfile - --error-logfile -`
 
 ## 4) Domain and HTTPS
 
